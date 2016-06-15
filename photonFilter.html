@@ -12,22 +12,30 @@ canvas {
 }
 
 #ui {
-	width: 30%;
+	width: 60%;
 	position: absolute;
-	top: 75%;
+	top: 65%;
 }
 
 input.comptrol {
 position:relative;
 left:30%;
+width:50%;
 }
 
 #screen {
 position: absolute;
-top:10%;
+top:0%;
 height:60%;
 }
 
+
+#experiment{
+	position:absolute;
+	top:15%;
+	height:80%;
+	width: 70%;
+}
 
 label {
 	position:absolute;
@@ -38,38 +46,44 @@ label {
 
 <body>
 
-<h1 id="theTitle">Photon detection</h1>
+<h1 id="theTitle">Photon filtering</h1>
+<h2 id="status">0 | 0</h2>
 
-
-
+<div id = "experiment">
 <div id="graphics">
     <canvas id="screen" height="600" width="600"></canvas>
 </div>
 
 <div id = "ui">
+	<button type="button" id="lamp" onclick="lampToggle()">Turn lamp off</button>
+	<button type="button" id="playPause" onclick="buttonChange()">Pause</button>
+	<button type="button" id="reset" onclick="resetScreen()">Reset</button>
+<br>
 	<label for="brightnessS" >Brightness</label>
-	<input type="range" class="comptrol" id="brightnessS"  min="0" max ="50" step="1" value="250" onInput="inputUpdate(value, min, max, id, 'brightnessT')" >
-	<input type="text" class="comptrol"id="brightnessT" min="0" max="50"  value="250" onInput="inputUpdate(value, min, max, id, 'brightnessS')">
+	<input type="range" class="comptrol" id="brightnessS"  min="0" max ="100" step="0.1" value="5" onInput="inputUpdate(value, min, max, id, 'brightnessT')" >
+	<input type="text" class="comptrol"id="brightnessT" min="0" max="100"  value="5" onInput="inputUpdate(value, min, max, id, 'brightnessS')">
 	<br>
-	<label for="colourS" >Colour</label>
-	<input type="range" id="colourS" class="comptrol" min = "0" max = "260" step = "0.1" value="120" onInput="inputUpdate(value, min,max, id, 'colourT')">
-	<input type="text" id="colourT" class="comptrol" min = "0" max = "260" value = "120" onInput="inputUpdate(value, min,max, id, 'colourS')">
+	<label for="colourS" >Transmission</label>
+	<input type="range" id="colourS" class="comptrol" min = "0" max = "1" step = "0.001" value="0.20" onInput="inputUpdate(value, min,max, id, 'colourT')">
+	<input type="text" id="colourT" class="comptrol" min = "0" max = "1" step = "any" value="0.20" onInput="inputUpdate(value, min,max, id, 'colourS')">
 	<br>	
 	<label for="fadeS" >Fade rate</label>
-	<input type="range" id="fadeS" class="comptrol" min = "0" max = "100" step = "0.1" value="10" onInput="inputUpdate(value, min, max,id, 'fadeT')">
-	<input type="text" id="fadeT" class="comptrol" min = "0" max = "100" value = "10" onInput="inputUpdate(value, min, max, id, 'fadeS')">
+	<input type="range" id="fadeS" class="comptrol" min = "0" max = "100" step = "0.1" value="35" onInput="inputUpdate(value, min, max,id, 'fadeT')">
+	<input type="text" id="fadeT" class="comptrol" min = "0" max = "100" value = "35" onInput="inputUpdate(value, min, max, id, 'fadeS')">
 	<br>	
-	<button type="button" id="playPause" onclick="buttonChange()">Pause</button>
-	<button type="button" id="reset" onClick="resetScreen()">Reset</button>
+
 	
 </div>
-
+</div>
 <script>
 
 var pause = false;
 	
 	var mouseX = 0;
 	var mouseY = 0;
+	
+	var nIn = 0;
+	var nOut = 0;
 	
 	var title = document.querySelector("#theTitle");
 	document.querySelector("#screen").width = document.querySelector("#screen").height;
@@ -80,7 +94,7 @@ var pause = false;
 			mouseX = event.pageX - mainCanvas.offsetLeft;
 			mouseY = event.pageY - mainCanvas.offsetTop;
 	});
-	
+
 	var canvasWidth = mainCanvas.width;
 	var canvasHeight = mainCanvas.height;
 	
@@ -94,36 +108,53 @@ var pause = false;
 							
 
 	var photons = new Array();
-	var photonVel = 7; //pixels per frame. This is the speed of light!
+	var filters = new Array();
+	var impacts = new Array();
+	
+	
+	var photonVel = 2; //pixels per frame. This is the speed of light!
+	
+	var newFilter = new Filter(canvasWidth/2, canvasHeight/2, 200, 400, 0.00001, photonVel);
+	filters.push(newFilter);
 
 	var minVisEn = 1.8; //eV
 	var maxVisEn = 3.1; //eV
 	
-	var trailLength = 5;
+	var lampOn = true;
 
 resetScreen();
 drawPhotons();
 
 function drawPhotons() {
-	
+	var status = document.getElementById('status');
+	status.innerHTML = nIn+ " photons in | " + nOut + " photons out";
 
 	var brightness = getInputValue("brightnessS");
-	var lampColour = "hsla(" + getInputValue("colourS") + ", 100%, " +50+ "%, 0.95)";
+	var trans = getInputValue("colourS");
 	var fadeRate = getInputValue("fadeS");
 	
   	mainContext.fillStyle = "rgba(0,0,0," + fadeRate/100 + ")";
-  	mainContext.fillRect(0, 0, canvasWidth, canvasHeight);	
+  	mainContext.fillRect(0, 0, canvasWidth, canvasHeight);
+	
+	for(var i = 0; i < filters.length; i++){
+		thisFilter = filters[i];
+		thisFilter.t = trans;
+		thisFilter.update();
+		thisFilter.render();
+	}	
 	
 	updatePhotons(photons);
+	updateImpacts(impacts);
 
 	
-	removePhotons(photons);
+	removeObjects(photons);
+	removeObjects(impacts);
 
-	if(brightness > 0){
- 	   for (var i = 0; i < brightness; i++) {
-if(Math.random()>0.8){
+	if(brightness > 0 && lampOn){
+ 	   for (var i = 0; i < 5; i++) {
+		   if(Math.random() <= brightness/100){
 			   createPhoton(photons);
-			   }
+		   }
 		   
 	   }
    }
@@ -132,6 +163,14 @@ if(Math.random()>0.8){
    
    if(!pause){
 	   requestAnimationFrame(drawPhotons);
+   } else {
+	mainContext.fillStyle = "rgba(100,100,255,0.3)";
+	mainContext.fillRect(canvasWidth/2 - 150, canvasHeight/2 - 75, 300, 100);
+	
+    mainContext.fillStyle = "rgb(255,255,255)";
+    mainContext.font="80px Helvetica";
+    mainContext.textAlign = "center";
+    mainContext.fillText("Paused!",canvasWidth/2 ,canvasHeight/2 );
    }
 }
 
@@ -162,35 +201,77 @@ function buttonChange(){
 		button.textContent="Pause";
 		requestAnimationFrame(drawPhotons);
 	} else {
-		button.textContent="Play";	
+		button.textContent="Play";
+		
+
+			
 	}
 	pause = !pause;
+}
+
+function lampToggle(){
+	var button = document.querySelector('#lamp');
+	if(lampOn){
+		button.textContent="Turn lamp on";
+	} else {
+		button.textContent="Turn lamp off";	
+	}
+	lampOn = !lampOn;
 }
 
 function resetScreen(){
 	mainContext.fillStyle = "rgba(0,0,0,1)";
 	mainContext.fillRect(0, 0, canvasWidth, canvasHeight);
+	photons = new Array();
+	nIn = 0;
+	nOut = 0;
+	
+	requestAnimationFrame(drawPhotons);
 }
 
 function createPhoton(p){
 		var en = map_range(Math.random(),0,1,minVisEn,maxVisEn);
-		var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.4*canvasHeight,0.6*canvasHeight), photonVel, 0, en);
+		var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
 		p.push(newPhoton);
+		nIn++;
 
 }
 function updatePhotons(p){
 	for(var i = 0; i < p.length; i++) {
 		var thisPhoton = p[i];
 		thisPhoton.update();
+		
+		for(var j = 0; j < filters.length; j++){
+			var thisFilter = filters[j];
+			if(thisPhoton.posX > thisFilter.posX - thisFilter.w/2 && thisPhoton.posX < thisFilter.posX + thisFilter.w/2 && thisPhoton.posY > thisFilter.posY - thisFilter.h/2 && thisPhoton.posY < thisFilter.posY + thisFilter.h/2){
+				if(Math.random()>thisFilter.coeff){
+					thisPhoton.alive = false;
+					var newImpact = new Impact(thisPhoton.posX, thisPhoton.posY);
+					impacts.push(newImpact);
+
+				}
+				
+			}
+		}
+		
 		if(thisPhoton.posX > canvasWidth || thisPhoton.posX < 0 || thisPhoton.posY > canvasHeight || thisPhoton.posY < 0){
 		thisPhoton.alive = false;
+		nOut++;
 		}
 		thisPhoton.render();	
 
 	}
 }
 
-function removePhotons(p){
+function updateImpacts(p){
+	for(var i = 0; i < p.length; i++) {
+		var thisImpact = p[i];
+		thisImpact.update();
+		thisImpact.render();
+	}
+}
+
+function removeObjects(p){
 for(var i = p.length - 1; i >= 0; i--) {
 		var thisPhoton = p[i];
 		if(!thisPhoton.alive){
@@ -227,17 +308,61 @@ function Photon(posX, posY, velX, velY, energy) {
 	this.render = function(){
 
 		
-		//mainContext.beginPath();
-		//mainContext.arc(this.posX, this.posY, this.radius, 0, 2*Math.PI, false);
-		//mainContext.closePath();
+	
 		mainContext.fillStyle = this.fillStyle;
 		mainContext.fillRect(this.posX - this.radius, this.posY - this.radius, 2*this.radius, 2*this.radius);
 		
 		mainContext.fillStyle = "rgba(255,255,255,0.9)"
-		mainContext.fillRect(this.posX - this.radius, this.posY - this.radius, 0.4*this.radius, 0.4*this.radius);
+		mainContext.fillRect(this.posX - 0.2*this.radius, this.posY - 0.2*this.radius, 0.4*this.radius, 0.4*this.radius);
 		
 	}
 
+}
+
+function Filter(posX, posY, w, h, t, vel){
+	this.posX = posX;
+	this.posY = posY;
+	this.w = w;
+	this.h = h;
+	this.t = t;
+	this.vel = vel;
+	
+	this.strokeStyle = "rgba(255,255,0,1)"; //this will later be dependent on its spectral properties?
+	
+	this.update = function(){
+		this.coeff = Math.pow(this.t, this.vel/this.w);
+	}
+	
+	this.render = function(){
+		mainContext.strokeStyle = this.strokeStyle;
+		mainContext.strokeRect(this.posX - w/2, this.posY - h/2,w,h);
+
+	}
+	
+}
+
+function Impact(posX, posY){
+	this.posX = posX;
+	this.posY = posY;
+	
+	this.radius = 5;
+	this.alive = true;
+	this.counter = 0;
+	
+	this.update = function(){
+		this.counter++;
+		this.radius = this.radius*1.1;
+		if(this.counter > 6){
+			this.alive = false;
+		}
+		
+	}
+
+	this.render = function(){
+		mainContext.strokeStyle = "rgba(255,255,255,1)";
+		mainContext.strokeRect(this.posX - this.radius, this.posY - this.radius, this.radius*2,this.radius*2);
+
+	}
 }
 
 
