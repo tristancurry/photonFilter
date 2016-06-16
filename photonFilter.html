@@ -81,16 +81,16 @@ margin:10px;
 	<button type="button" id="reset" onclick="resetScreen()">Reset</button>
 <br>
 	<label for="brightnessS" >Brightness (average photons per frame)</label>
-	<input type="range" class="comptrol" id="brightnessS"  min="0" max ="100" step="0.1" value="5" onInput="inputUpdate(value, min, max, id, 'brightnessT')" >
-	<input type="text" class="comptrol"id="brightnessT" min="0" max="100"  value="5" onInput="inputUpdate(value, min, max, id, 'brightnessS')">
+	<input type="range" class="comptrol" id="brightnessS"  min="0" max ="100" step="0.1" value="10" onInput="inputUpdate(value, min, max, id, 'brightnessT')" >
+	<input type="text" class="comptrol"id="brightnessT" min="0" max="100"  value="10" onInput="inputUpdate(value, min, max, id, 'brightnessS')">
 	<br>
 	<label for="transS" >Probability for transmission</label>
 	<input type="range" id="transS" class="comptrol" min = "0" max = "1" step = "0.001" value="0.20" onInput="inputUpdate(value, min,max, id, 'transT')">
 	<input type="text" id="transT" class="comptrol" min = "0" max = "1" step = "any" value="0.20" onInput="inputUpdate(value, min,max, id, 'transS')">
 	<br>	
 	<label for="fadeS" >Fade rate</label>
-	<input type="range" id="fadeS" class="comptrol" min = "0" max = "100" step = "0.1" value="35" onInput="inputUpdate(value, min, max,id, 'fadeT')">
-	<input type="text" id="fadeT" class="comptrol" min = "0" max = "100" value = "35" onInput="inputUpdate(value, min, max, id, 'fadeS')">
+	<input type="range" id="fadeS" class="comptrol" min = "0" max = "100" step = "0.1" value="25" onInput="inputUpdate(value, min, max,id, 'fadeT')">
+	<input type="text" id="fadeT" class="comptrol" min = "0" max = "100" value = "25" onInput="inputUpdate(value, min, max, id, 'fadeS')">
 	<br>	
 
 	
@@ -248,24 +248,26 @@ function drawSpectra(){
     specContext.fillText(mouseX + ", " + mouseY,specWidth/2 ,specHeight/2 );
 
 	for(var i = 0; i < spectrumChannels.length; i++){
-	var col = Math.round(map_range(i, 0, spectrumChannels.length, 0, 265))
-	specContext.fillStyle = "hsla(" + col + ",100%,50%,0.8)"	;
-	//specContext.fillRect(i*channelWidth, specHeight - spectrumChannels[i], channelWidth,channelWidth);
-	if(i > 0){
-		/*specContext.beginPath();
-		specContext.moveTo(i*channelWidth,specHeight - spectrumChannels[i]);
-		specContext.lineTo((i-1)*channelWidth,specHeight - spectrumChannels[i-1]);
-		specContext.moveTo(i*channelWidth,specHeight - spectrumChannels[i]);
-		specContext.lineTo((i)*channelWidth,specHeight);*/
+		var col = Math.round(map_range(i, 0, spectrumChannels.length, 0, 265))
+		specContext.fillStyle = "hsla(" + col + ",100%,50%,0.8)"	;
+		//specContext.fillRect(i*channelWidth, specHeight - spectrumChannels[i], channelWidth,channelWidth);
+		if(i > 0){
+			/*specContext.beginPath();
+			specContext.moveTo(i*channelWidth,specHeight - spectrumChannels[i]);
+			specContext.lineTo((i-1)*channelWidth,specHeight - spectrumChannels[i-1]);
+			specContext.moveTo(i*channelWidth,specHeight - spectrumChannels[i]);
+			specContext.lineTo((i)*channelWidth,specHeight);*/
 		
-		specContext.strokeStyle = specContext.fillStyle;
-		//specContext.stroke();
-		specContext.strokeRect(i*channelWidth, specHeight,-1*channelWidth, -1*spectrumChannels[i]);
-		
+			specContext.strokeStyle = specContext.fillStyle;
+			//specContext.stroke();
+			specContext.strokeRect(i*channelWidth, specHeight,-1*channelWidth, -1*spectrumChannels[i]);		
+		}
 	}
-
+	
+	if(pause){
+	requestAnimationFrame(drawSpectra);
 	}
-   }
+}
 
 
 function changeSpectrum(s,c){
@@ -344,9 +346,8 @@ function resetScreen(){
 }
 
 function createPhoton(p){
-		
 	var chan = sampleFromCDF(spectrumCDF);
-	var chanMin = map_range(chan,0, spectrumCDF.length, minVisEn, maxVisEn);
+	var chanMin = map_range(chan,0, spectrumCDF.length - 1, minVisEn, maxVisEn);
 	var chanMax = chanMin + (maxVisEn-minVisEn)/spectrumCDF.length;
 		
 		var en = map_range(Math.random(),0,1,chanMin,chanMax);
