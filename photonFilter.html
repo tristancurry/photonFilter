@@ -64,7 +64,7 @@ margin:10px;
 <div id = "experiment">
 
 <div id="graphics">
-    <canvas id="screen" height="600" width="600"></canvas>
+<canvas id="screen" height="600" width="600"></canvas>
 </div>
 <h2 id="status">0 | 0</h2>
 <div id = "ui">
@@ -89,6 +89,9 @@ margin:10px;
 	
 </div>
 </div>
+<canvas id="spectrum" width="300" height="200"></canvas>
+
+
 <script>
 
 var pause = false;
@@ -103,14 +106,19 @@ var pause = false;
 	document.querySelector("#screen").width = document.querySelector("#screen").height;
 	var mainCanvas = document.querySelector("#screen");
 	var mainContext = mainCanvas.getContext("2d");
+	var specCanvas = document.querySelector("#spectrum");
+	var specContext = specCanvas.getContext("2d");
+	
 
-	mainCanvas.addEventListener('mousemove', function(event){
-			mouseX = event.pageX - mainCanvas.offsetLeft;
-			mouseY = event.pageY - mainCanvas.offsetTop;
+	specCanvas.addEventListener('mousemove', function(event){
+			mouseX = event.pageX - specCanvas.offsetLeft;
+			mouseY = event.pageY - specCanvas.offsetTop;
 	});
 
 	var canvasWidth = mainCanvas.width;
 	var canvasHeight = mainCanvas.height;
+	var specWidth = specCanvas.width;
+	var specHeight = specCanvas.height;
 	
 
 
@@ -141,6 +149,7 @@ resetScreen();
 drawPhotons();
 
 function drawPhotons() {
+//requestAnimationFrame(drawSpectra);
 	var status = document.getElementById('status');
 	status.innerHTML = nIn+ " photons in | " + nOut + " photons out";
 
@@ -186,6 +195,26 @@ function drawPhotons() {
     mainContext.textAlign = "center";
     mainContext.fillText("Paused!",canvasWidth/2 ,canvasHeight/2 );
    }
+}
+
+function drawSpectra(){
+   if(!pause){
+	   requestAnimationFrame(drawPhotons);
+   } else {
+	mainContext.fillStyle = "rgba(100,100,255,0.3)";
+	mainContext.fillRect(canvasWidth/2 - 150, canvasHeight/2 - 75, 300, 100);
+	
+    mainContext.fillStyle = "rgb(255,255,255)";
+    mainContext.font="80px Helvetica";
+    mainContext.textAlign = "center";
+    mainContext.fillText("Paused!",canvasWidth/2 ,canvasHeight/2 );
+	
+	specContext.fillStyle = "rgb(255,0,0)";
+	specContext.fillRect = (mouseX, mouseY, 5,5);
+	
+	requestAnimationFrame(drawSpectra);
+   }
+
 }
 
 
@@ -235,7 +264,7 @@ function lampToggle(){
 
 function impactToggle(){
 	var button = document.querySelector('#impacts');
-	if(impactsOn){
+	if(!impactsOn){
 		button.textContent="Stop highlighting absorptions";
 	} else {
 		button.textContent="Highlight absorptions";	
