@@ -36,6 +36,11 @@ top:0%;
 height:80%;
 }
 
+#spectrum {
+position:absolute;
+right:0px;
+}
+
 #status{
 	position:relative;
 	top:80%;
@@ -109,12 +114,33 @@ var pause = false;
 	var specCanvas = document.querySelector("#spectrum");
 	var specContext = specCanvas.getContext("2d");
 	
-
+var mouseStillDown = false;
 	specCanvas.addEventListener('mousemove', function(event){
 			mouseX = event.pageX - specCanvas.offsetLeft;
 			mouseY = event.pageY - specCanvas.offsetTop;
+			if(mouseStillDown){
+			var thisChannel = Math.round(mouseX/channelWidth);
+				changeSpectrum(spectrumChannels,thisChannel);
+			}
+			if(mouseX > specCanvas.width|| mouseX < 0 || mouseY > specCanvas.height || mouseY < 0){
+			mouseStillDown = false;
+			}
+	});
+	
+	specCanvas.addEventListener('mousedown', function(event){
+	var thisChannel = Math.round(mouseX/channelWidth);
+	 changeSpectrum(spectrumChannels,thisChannel);
+	mouseStillDown = true;
+
+	
+	});
+	
+		specCanvas.addEventListener('mouseup', function(event){
+		mouseStillDown = false;
+
 	});
 
+	
 	var canvasWidth = mainCanvas.width;
 	var canvasHeight = mainCanvas.height;
 	var specWidth = specCanvas.width;
@@ -129,10 +155,16 @@ var pause = false;
 							
 							
 
+var channelWidth = 5;
+var channels = Math.round(specWidth/channelWidth);
 	var photons = new Array();
 	var filters = new Array();
 	var impacts = new Array();
+	var spectrumChannels = new Array();
 	
+	for(var i = 0; i < channels; i++){
+		spectrumChannels.push(0);
+	}
 	
 	var photonVel = 2; //pixels per frame. This is the speed of light!
 	
@@ -149,7 +181,7 @@ resetScreen();
 drawPhotons();
 
 function drawPhotons() {
-//requestAnimationFrame(drawSpectra);
+	drawSpectra();
 	var status = document.getElementById('status');
 	status.innerHTML = nIn+ " photons in | " + nOut + " photons out";
 
@@ -198,25 +230,27 @@ function drawPhotons() {
 }
 
 function drawSpectra(){
-   if(!pause){
-	   requestAnimationFrame(drawPhotons);
-   } else {
-	mainContext.fillStyle = "rgba(100,100,255,0.3)";
-	mainContext.fillRect(canvasWidth/2 - 150, canvasHeight/2 - 75, 300, 100);
-	
-    mainContext.fillStyle = "rgb(255,255,255)";
-    mainContext.font="80px Helvetica";
-    mainContext.textAlign = "center";
-    mainContext.fillText("Paused!",canvasWidth/2 ,canvasHeight/2 );
-	
-	specContext.fillStyle = "rgb(255,0,0)";
-	specContext.fillRect = (mouseX, mouseY, 5,5);
-	
-	requestAnimationFrame(drawSpectra);
+   
+	specContext.fillStyle = "rgba(0,0,0,1)";
+	specContext.fillRect(0,0, specWidth, specHeight);
+	specContext.fillStyle = "rgba(255,255,0,0.7)";
+    specContext.font="80px Helvetica";
+    specContext.textAlign = "center";
+    specContext.fillText(mouseX + ", " + mouseY,specWidth/2 ,specHeight/2 );
+	specContext.fillStyle = "rgb(255,0,0)"	;
+	for(var i = 0; i < spectrumChannels.length; i++){
+	specContext.fillRect(i*channelWidth, spectrumChannels[i], channelWidth,channelWidth);
+	}
    }
 
-}
 
+function changeSpectrum(s,c){
+	s[c] = mouseY;
+	if(c > 1 && c < s.length - 1){
+	s[c + 1] = Math.round(0.5*(s[c]+s[c + 2]));
+	s[c - 1] = Math.round(0.5*(s[c]+s[c - 2]));
+	}
+}
 
 
 function constrain (val, min, max) {
