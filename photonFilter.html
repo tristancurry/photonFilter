@@ -12,9 +12,9 @@ canvas {
 }
 
 #ui {
-	width: 60%;
+	width: 70%;
 	position: absolute;
-	top: 65%;
+	top: 90%;
 }
 
 input.comptrol {
@@ -23,47 +23,60 @@ left:30%;
 width:50%;
 }
 
+#experiment{
+	position:absolute;
+	top:0%;
+	height:80%;
+	width: 100%;
+}
+
 #screen {
 position: absolute;
 top:0%;
-height:60%;
+height:80%;
+}
+
+#status{
+	position:relative;
+	top:80%;
+	width: 100%;
 }
 
 
-#experiment{
-	position:absolute;
-	top:15%;
-	height:80%;
-	width: 70%;
-}
 
 label {
 	position:absolute;
 	width:30%;
 }
+
+button {
+margin:10px;
+}
+
 </style>
 </head>
 
 <body>
 
-<h1 id="theTitle">Photon filtering</h1>
-<h2 id="status">0 | 0</h2>
+
+
 
 <div id = "experiment">
+
 <div id="graphics">
     <canvas id="screen" height="600" width="600"></canvas>
 </div>
-
+<h2 id="status">0 | 0</h2>
 <div id = "ui">
 	<button type="button" id="lamp" onclick="lampToggle()">Turn lamp off</button>
 	<button type="button" id="playPause" onclick="buttonChange()">Pause</button>
 	<button type="button" id="reset" onclick="resetScreen()">Reset</button>
 <br>
-	<label for="brightnessS" >Brightness</label>
+	<label for="brightnessS" >Brightness (average photons per frame)</label>
 	<input type="range" class="comptrol" id="brightnessS"  min="0" max ="100" step="0.1" value="5" onInput="inputUpdate(value, min, max, id, 'brightnessT')" >
 	<input type="text" class="comptrol"id="brightnessT" min="0" max="100"  value="5" onInput="inputUpdate(value, min, max, id, 'brightnessS')">
 	<br>
-	<label for="colourS" >Transmission</label>
+	<label for="colourS" >Probability for transmission</label>
 	<input type="range" id="colourS" class="comptrol" min = "0" max = "1" step = "0.001" value="0.20" onInput="inputUpdate(value, min,max, id, 'colourT')">
 	<input type="text" id="colourT" class="comptrol" min = "0" max = "1" step = "any" value="0.20" onInput="inputUpdate(value, min,max, id, 'colourS')">
 	<br>	
