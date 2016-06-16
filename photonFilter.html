@@ -69,6 +69,7 @@ margin:10px;
 <h2 id="status">0 | 0</h2>
 <div id = "ui">
 	<button type="button" id="lamp" onclick="lampToggle()">Turn lamp off</button>
+	<button type="button" id="impacts" onclick="impactToggle()">Highlight absorptions</button>
 	<button type="button" id="playPause" onclick="buttonChange()">Pause</button>
 	<button type="button" id="reset" onclick="resetScreen()">Reset</button>
 <br>
@@ -76,9 +77,9 @@ margin:10px;
 	<input type="range" class="comptrol" id="brightnessS"  min="0" max ="100" step="0.1" value="5" onInput="inputUpdate(value, min, max, id, 'brightnessT')" >
 	<input type="text" class="comptrol"id="brightnessT" min="0" max="100"  value="5" onInput="inputUpdate(value, min, max, id, 'brightnessS')">
 	<br>
-	<label for="colourS" >Probability for transmission</label>
-	<input type="range" id="colourS" class="comptrol" min = "0" max = "1" step = "0.001" value="0.20" onInput="inputUpdate(value, min,max, id, 'colourT')">
-	<input type="text" id="colourT" class="comptrol" min = "0" max = "1" step = "any" value="0.20" onInput="inputUpdate(value, min,max, id, 'colourS')">
+	<label for="transS" >Probability for transmission</label>
+	<input type="range" id="transS" class="comptrol" min = "0" max = "1" step = "0.001" value="0.20" onInput="inputUpdate(value, min,max, id, 'transT')">
+	<input type="text" id="transT" class="comptrol" min = "0" max = "1" step = "any" value="0.20" onInput="inputUpdate(value, min,max, id, 'transS')">
 	<br>	
 	<label for="fadeS" >Fade rate</label>
 	<input type="range" id="fadeS" class="comptrol" min = "0" max = "100" step = "0.1" value="35" onInput="inputUpdate(value, min, max,id, 'fadeT')">
@@ -134,6 +135,7 @@ var pause = false;
 	var maxVisEn = 3.1; //eV
 	
 	var lampOn = true;
+	var impactsOn = false;
 
 resetScreen();
 drawPhotons();
@@ -143,7 +145,7 @@ function drawPhotons() {
 	status.innerHTML = nIn+ " photons in | " + nOut + " photons out";
 
 	var brightness = getInputValue("brightnessS");
-	var trans = getInputValue("colourS");
+	var trans = getInputValue("transS");
 	var fadeRate = getInputValue("fadeS");
 	
   	mainContext.fillStyle = "rgba(0,0,0," + fadeRate/100 + ")";
@@ -159,7 +161,6 @@ function drawPhotons() {
 	updatePhotons(photons);
 	updateImpacts(impacts);
 
-	
 	removeObjects(photons);
 	removeObjects(impacts);
 
@@ -232,6 +233,16 @@ function lampToggle(){
 	lampOn = !lampOn;
 }
 
+function impactToggle(){
+	var button = document.querySelector('#impacts');
+	if(impactsOn){
+		button.textContent="Stop highlighting absorptions";
+	} else {
+		button.textContent="Highlight absorptions";	
+	}
+	impactsOn = !impactsOn;
+}
+
 function resetScreen(){
 	mainContext.fillStyle = "rgba(0,0,0,1)";
 	mainContext.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -259,20 +270,20 @@ function updatePhotons(p){
 			if(thisPhoton.posX > thisFilter.posX - thisFilter.w/2 && thisPhoton.posX < thisFilter.posX + thisFilter.w/2 && thisPhoton.posY > thisFilter.posY - thisFilter.h/2 && thisPhoton.posY < thisFilter.posY + thisFilter.h/2){
 				if(Math.random()>thisFilter.coeff){
 					thisPhoton.alive = false;
-					var newImpact = new Impact(thisPhoton.posX, thisPhoton.posY);
-					impacts.push(newImpact);
-
-				}
-				
+					if(impactsOn){
+						var newImpact = new Impact(thisPhoton.posX, thisPhoton.posY);
+						impacts.push(newImpact);
+					}
+				}	
 			}
 		}
 		
 		if(thisPhoton.posX > canvasWidth || thisPhoton.posX < 0 || thisPhoton.posY > canvasHeight || thisPhoton.posY < 0){
-		thisPhoton.alive = false;
-		nOut++;
+			thisPhoton.alive = false;
+			nOut++;
 		}
+		
 		thisPhoton.render();	
-
 	}
 }
 
