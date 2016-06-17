@@ -10,7 +10,7 @@
 
 //this CSS is terrible and I feel bad about it
 canvas {
-    border: 3px #CCC solid;
+    border: 1px #CCC solid;
 }
 
 #ui {
@@ -39,8 +39,17 @@ height:80%;
 }
 
 #spectrum {
+
+margin: auto;
+    display: block;
+}
+
+#source {
 position:absolute;
 right:0px;
+width: 550px;
+height: 400px;
+background-color: #999999;
 }
 
 #status{
@@ -94,10 +103,11 @@ margin:10px;
 	<br>	
 
 	
+	</div>
 </div>
+<div id="source">
+<canvas id="spectrum" width="530" height="300"></canvas>
 </div>
-<canvas id="spectrum" width="500" height="200"></canvas>
-
 
 
 <script>
@@ -114,24 +124,30 @@ var pause = false;
 	document.querySelector("#screen").width = document.querySelector("#screen").height;
 	var mainCanvas = document.querySelector("#screen");
 	var mainContext = mainCanvas.getContext("2d");
+	var source = document.querySelector('#source');
 	var specCanvas = document.querySelector("#spectrum");
 	var specContext = specCanvas.getContext("2d");
 	
 	specCanvas.style.cursor = "crosshair";
 	
+	var specDrawBounds = [0.05*specCanvas.width, 0.95*specCanvas.width, 0.05*specCanvas.height, 0.95*specCanvas.height];
+	for(var i = 0; i<specDrawBounds.length; i++){
+	specDrawBounds[i] = Math.round(specDrawBounds[i]);
+	}
+	
 var mouseStillDown = false;
 	specCanvas.addEventListener('mousemove', function(event){
-			mouseX = event.pageX - specCanvas.offsetLeft;
-			mouseY = specCanvas.height - (event.pageY - specCanvas.offsetTop);
+			mouseX = event.pageX - specCanvas.offsetLeft - source.offsetLeft;
+			mouseY = specCanvas.height - (event.pageY - specCanvas.offsetTop - source.offsetTop);
 			if(mouseStillDown){
-			var thisChannel = Math.round(mouseX/channelWidth);
+				var thisChannel = constrain(Math.round((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
 				changeSpectrum(spectrumChannels,thisChannel);
 			}
 
 	});
 	
 	specCanvas.addEventListener('mousedown', function(event){
-	var thisChannel = Math.round(mouseX/channelWidth);
+	var thisChannel = constrain(Math.round((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
 	 changeSpectrum(spectrumChannels,thisChannel);
 	mouseStillDown = true;
 
@@ -163,7 +179,7 @@ var mouseStillDown = false;
 							
 
 var channelWidth = 5;
-var channels = Math.round(specWidth/channelWidth);
+var channels = Math.round((specDrawBounds[1] - specDrawBounds[0])/channelWidth);
 	var photons = new Array();
 	var filters = new Array();
 	var impacts = new Array();
@@ -260,7 +276,7 @@ function drawSpectra(){
 		
 			specContext.strokeStyle = specContext.fillStyle;
 			//specContext.stroke();
-			specContext.strokeRect(i*channelWidth, specHeight,-1*channelWidth, -1*spectrumChannels[i]);		
+			specContext.strokeRect(i*channelWidth + specDrawBounds[0], specDrawBounds[3],-1*channelWidth, -1*spectrumChannels[i]);		
 		}
 	}
 	
@@ -271,7 +287,7 @@ function drawSpectra(){
 
 
 function changeSpectrum(s,c){
-	s[c] = mouseY;
+	s[c] = constrain(mouseY,specDrawBounds[2],specDrawBounds[3]);
 	if(c > 1 && c < s.length - 2){
 	s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
 	s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
@@ -367,7 +383,7 @@ function updatePhotons(p){
 				if(Math.random()>thisFilter.coeff){
 					thisPhoton.alive = false;
 					if(impactsOn){
-						var newImpact = new Impact(thisPhoton.posX, thisPhoton.posY);
+						var newImpact = new Impact(thisPhoton.posX, thisPhoton.posY, thisPhoton.fillStyle);
 						impacts.push(newImpact);
 					}
 				}	
@@ -498,9 +514,12 @@ function Filter(posX, posY, w, h, t, vel){
 	
 }
 
-function Impact(posX, posY){
+function Impact(posX, posY, col){
 	this.posX = posX;
 	this.posY = posY;
+	this.col = col;
+	
+	
 	
 	this.radius = 5;
 	this.alive = true;
@@ -516,7 +535,7 @@ function Impact(posX, posY){
 	}
 
 	this.render = function(){
-		mainContext.strokeStyle = "rgba(255,255,255,1)";
+		mainContext.strokeStyle = col;
 		mainContext.strokeRect(this.posX - this.radius, this.posY - this.radius, this.radius*2,this.radius*2);
 
 	}
