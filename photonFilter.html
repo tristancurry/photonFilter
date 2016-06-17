@@ -265,7 +265,7 @@ function drawSpectra(){
 
 	for(var i = 0; i < spectrumChannels.length; i++){
 		var col = Math.round(map_range(i, 0, spectrumChannels.length, 0, 265))
-		specContext.fillStyle = "hsla(" + col + ",100%,50%,0.8)"	;
+		specContext.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
 		//specContext.fillRect(i*channelWidth, specHeight - spectrumChannels[i], channelWidth,channelWidth);
 		if(i > 0){
 			/*specContext.beginPath();
@@ -287,7 +287,7 @@ function drawSpectra(){
 
 
 function changeSpectrum(s,c){
-	s[c] = constrain(mouseY,specDrawBounds[2],specDrawBounds[3]);
+	s[c] = constrain(mouseY - specDrawBounds[2],0,specDrawBounds[3]);
 	if(c > 1 && c < s.length - 2){
 	s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
 	s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
