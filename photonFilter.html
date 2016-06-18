@@ -138,7 +138,6 @@ var pause = false;
 	var mainCanvas = document.querySelector("#screen");
 	var mainContext = mainCanvas.getContext("2d");
 	var source = document.querySelector('#source');
-	console.log(source);
 	var specCanvas = document.querySelector("#spectrum");
 	var specContext = specCanvas.getContext("2d");
 	
@@ -642,12 +641,14 @@ this.sampleCDF = function(CDF){
 	
 	this.canvas.style.cursor = "crosshair";
 	this.drawBounds = [0.15*this.canvas.width, 0.95*this.canvas.width, 0.20*this.canvas.height, 0.85*this.canvas.height];
+	console.log(this.drawBounds);
 	this.spectrumCDF = new Array();
 	this.mouseStillDown = false;
 	this.chanWidth = chanWidth;
 	this.channels = new Array();
 	
-
+	this.mouseX = 0;
+	this.mouseY = 0;
 	
 	for(var i = 0; i<this.drawBounds.length; i++){
 	this.drawBounds[i] = Math.round(this.drawBounds[i]);
@@ -658,23 +659,25 @@ this.sampleCDF = function(CDF){
 		this.spectrumCDF = this.makeCDF(this.normSpectrum(this.channels));
 	}
 	
+
+	
 	this.canvas.addEventListener('mousemove', function(event){
-		this.mouseX = event.pageX - this.canvas.offsetLeft - encDiv.offsetLeft;
-		this.mouseY = this.canvas.height - (event.pageY - this.canvas.offsetTop - encDiv.offsetTop);
+		this.mouseX = event.pageX - canvas.offsetLeft - encDiv.offsetLeft;
+		this.mouseY = canvas.height - (event.pageY - canvas.offsetTop - encDiv.offsetTop);
 		if(this.mouseStillDown){
-			var thisChannel = constrain(Math.floor((this.mouseX - this.drawBounds[0])/this.chanWidth),0,this.channels.length - 1);
-			this.updateSpectrum(this.channels,thisChannel);
+			var thisChannel = constrain(Math.floor((mouseX - drawBounds[0])/chanWidth),0,channels.length - 1);
+			updateSpectrum(channels,thisChannel);
 		}
 	});
 	
 	this.canvas.addEventListener('mousedown', function(event){
-		var thisChannel = constrain(Math.floor((this.mouseX - this.drawBounds[0])/this.chanWidth),0,this.channels.length - 1);
-		this.updateSpectrum(this.channels,thisChannel);
-		this.mouseStillDown = true;
+		var thisChannel = constrain(Math.floor((mouseX - drawBounds[0])/chanWidth),0,channels.length - 1);
+		updateSpectrum(channels,thisChannel);
+		mouseStillDown = true;
 	});
 	
 	this.canvas.addEventListener('mouseup', function(event){
-		this.mouseStillDown = false;
+		mouseStillDown = false;
 	});
 	
 	this.canvas.addEventListener('mouseout', function(event){
