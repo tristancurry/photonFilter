@@ -128,7 +128,7 @@ var pause = false;
 	var specCanvas = document.querySelector("#spectrum");
 	var specContext = specCanvas.getContext("2d");
 	
-	specCanvas.style.cursor = "crosshair";
+specCanvas.style.cursor = "crosshair";
 	
 	var specDrawBounds = [0.15*specCanvas.width, 0.95*specCanvas.width, 0.20*specCanvas.height, 0.85*specCanvas.height];
 	for(var i = 0; i<specDrawBounds.length; i++){
@@ -136,31 +136,30 @@ var pause = false;
 	}
 	
 var mouseStillDown = false;
-	specCanvas.addEventListener('mousemove', function(event){
-			mouseX = event.pageX - specCanvas.offsetLeft - source.offsetLeft;
-			mouseY = specCanvas.height - (event.pageY - specCanvas.offsetTop - source.offsetTop);
-			if(mouseStillDown){
-				var thisChannel = constrain(Math.floor((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
-				changeSpectrum(spectrumChannels,thisChannel);
-			}
 
+specCanvas.addEventListener('mousemove', function(event){
+		mouseX = event.pageX - specCanvas.offsetLeft - source.offsetLeft;
+		mouseY = specCanvas.height - (event.pageY - specCanvas.offsetTop - source.offsetTop);
+		if(mouseStillDown){
+			var thisChannel = constrain(Math.floor((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
+			changeSpectrum(spectrumChannels,thisChannel);
+		}
 	});
 	
-	specCanvas.addEventListener('mousedown', function(event){
+specCanvas.addEventListener('mousedown', function(event){
 	var thisChannel = constrain(Math.floor((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
-	 changeSpectrum(spectrumChannels,thisChannel);
+	changeSpectrum(spectrumChannels,thisChannel);
 	mouseStillDown = true;
-
 	
 	});
 	
-		specCanvas.addEventListener('mouseup', function(event){
-		mouseStillDown = false;
+specCanvas.addEventListener('mouseup', function(event){
+	mouseStillDown = false;
 
 	});
 	
-	specCanvas.addEventListener('mouseout', function(event){
-		mouseStillDown = false;
+specCanvas.addEventListener('mouseout', function(event){
+	mouseStillDown = false;
 	});
 
 	
@@ -563,11 +562,49 @@ function Optics(canvas) {
 }
 
 
-function Spectrum(canvas) {
+function Spectrum(canvas, encDiv, chanWidth) {
 
-	this.drawBounds = new Array();
+	this.canvas.style.cursor = "crosshair";
+	this.drawBounds = [0.15*this.canvas.width, 0.95*this.canvas.width, 0.20*this.canvas.height, 0.85*this.canvas.height];
 	this.spectrumCDF = new Array();
 	this.canvas = canvas;
+	this.encDiv = encDiv;
+	this.mouseStillDown = false;
+	this.chanWidth = chanWidth;
+	this.channels = new Array();
+	
+	for(var i = 0; i<this.drawBounds.length; i++){
+	this.drawBounds[i] = Math.round(this.drawBounds[i]);
+	}
+	
+	
+	for(var i = 0; i < channels + 1; i++){
+		this.channels.push(Math.round(this.canvas.height/2));
+		this.spectrumCDF = this.createCDF(this.normaliseSpectrum(this.channels));
+	}
+	
+	this.canvas.addEventListener('mousemove', function(event){
+		this.mouseX = event.pageX - this.canvas.offsetLeft - encDiv.offsetLeft;
+		this.mouseY = this.canvas.height - (event.pageY - this.canvas.offsetTop - encDiv.offsetTop);
+		if(this.mouseStillDown){
+			var thisChannel = constrain(Math.floor((this.mouseX - this.drawBounds[0])/chanWidth),0,this.channels.length - 1);
+			this.changeSpectrum(this.channels,thisChannel);
+		}
+	});
+	
+	this.canvas.addEventListener('mousedown', function(event){
+		var thisChannel = constrain(Math.floor((this.mouseX - this.drawBounds[0])/this.chanWidth),0,this.channels.length - 1);
+		this.changeSpectrum(this.channels,thisChannel);
+		this.mouseStillDown = true;
+	});
+	
+	this.canvas.addEventListener('mouseup', function(event){
+		this.mouseStillDown = false;
+	});
+	
+	this.canvas.addEventListener('mouseout', function(event){
+		this.mouseStillDown = false;
+	});
 	
 	function changeSpectrum(s,c){
 		s[c] = constrain(mouseY - (canvas.height - this.drawBounds[3]),0,(this.drawBounds[3] - 		this.drawBounds[2]));
