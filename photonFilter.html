@@ -527,6 +527,9 @@ function Filter(posX, posY, w, h, t, vel){
 	
 }
 
+
+
+
 function Impact(posX, posY, col){
 	this.posX = posX;
 	this.posY = posY;
@@ -553,6 +556,50 @@ function Impact(posX, posY, col){
 
 	}
 }
+
+////////////////////
+function Optics() {
+}
+
+
+function Spectrum() {
+	function normaliseSpectrum(s){
+		var S = 0;
+		var N = new Array();
+		for(var i = 0; i < s.length; i++){
+			S = S + s[i];
+		}
+		for(var i = 0; i < s.length; i++){
+			if(S == 0){
+				N.push(1/s.length);
+			} else {
+				N.push(s[i]/S);
+			}
+		}
+		return(N);
+	}
+
+	function createCDF(N){
+		var CDF = new Array();
+		CDF.push(N[0]);
+		for(var i = 1; i < N.length; i++){
+			CDF.push(CDF[i-1] + N[i]);
+		}
+	
+		return(CDF);	
+	}
+
+	function sampleFromCDF(CDF){
+		var sample = Math.random();
+		for(var i = 0; i < CDF.length; i++){
+			if(sample < CDF[i]){
+				return(i);
+				break;
+			}
+		}
+	}
+}
+
 
 
 </script>
