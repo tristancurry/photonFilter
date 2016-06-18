@@ -577,7 +577,6 @@ function Spectrum(canvas, encDiv, chanWidth) {
 	this.drawBounds[i] = Math.round(this.drawBounds[i]);
 	}
 	
-	
 	for(var i = 0; i < channels + 1; i++){
 		this.channels.push(Math.round(this.canvas.height/2));
 		this.spectrumCDF = this.createCDF(this.normaliseSpectrum(this.channels));
@@ -653,6 +652,42 @@ function Spectrum(canvas, encDiv, chanWidth) {
 				break;
 			}
 		}
+	}
+	
+	
+	function render(){
+   
+		this.ctx.fillStyle = "rgba(0,0,0,1)";
+		this.ctx.fillRect(0,0, specWidth, this.canvas.height);
+		this.ctx.fillStyle = "rgba(255,255,0,0.7)";
+		this.ctx.font="80px Helvetica";
+		this.ctx.textAlign = "center";
+		this.ctx.fillText(mouseX + ", " + mouseY,this.canvas.width/2 ,this.canvas.height/2 );
+
+		for(var i = 0; i < this.channels.length; i++){
+			var col = Math.round(map_range(i, 0, this.channels.length, 0, 265));
+			this.ctx.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
+			//this.ctx.fillRect(i*this.chanWidth, this.canvas.height - this.channels[i], this.chanWidth,this.chanWidth);
+
+			/*this.ctx.beginPath();
+			this.ctx.moveTo(i*this.chanWidth,this.canvas.height - this.channels[i]);
+			this.ctx.lineTo((i-1)*this.chanWidth,this.canvas.height - this.channels[i-1]);
+			this.ctx.moveTo(i*this.chanWidth,this.canvas.height - this.channels[i]);
+			this.ctx.lineTo((i)*this.chanWidth,this.canvas.height);*/
+		
+			this.ctx.strokeStyle = this.ctx.fillStyle;
+			//this.ctx.stroke();
+			
+			
+			this.ctx.strokeRect((i+1)*this.chanWidth + this.drawBounds[0], this.drawBounds[3],-1*this.chanWidth, -1*this.channels[i]);
+			
+			/*this.ctx.fillStyle = "rgba(255,255,0,0.7)";
+		    this.ctx.font="9px Helvetica";
+		    this.ctx.textAlign = "center";
+		    this.ctx.fillText(i,(i+1)*this.chanWidth + this.drawBounds[0], this.drawBounds[3]-1*this.channels[i]);*/		
+		
+		}
+	
 	}
 }
 
