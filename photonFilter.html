@@ -215,6 +215,7 @@ var channels = Math.round((specDrawBounds[1] - specDrawBounds[0])/channelWidth);
 	var impactsOn = false;
 	
 	var testFilter = new Spectrum("#filSpec", "#filter", 5);
+	var testSource = new Spectrum("#spectrum", "#source", 5);
 
 resetScreen();
 drawPhotons();
@@ -272,7 +273,9 @@ for(var i = 0; i < filters.length; i++){
 
 function drawSpectra(){
 	testFilter.render();
-	specContext.fillStyle = "rgba(0,0,0,1)";
+	testSource.render();
+	
+	/*specContext.fillStyle = "rgba(0,0,0,1)";
 	specContext.fillRect(0,0, specWidth, specHeight);
 	specContext.fillStyle = "rgba(255,255,0,0.7)";
     specContext.font="80px Helvetica";
@@ -284,24 +287,16 @@ function drawSpectra(){
 		specContext.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
 		//specContext.fillRect(i*channelWidth, specHeight - spectrumChannels[i], channelWidth,channelWidth);
 
-			/*specContext.beginPath();
-			specContext.moveTo(i*channelWidth,specHeight - spectrumChannels[i]);
-			specContext.lineTo((i-1)*channelWidth,specHeight - spectrumChannels[i-1]);
-			specContext.moveTo(i*channelWidth,specHeight - spectrumChannels[i]);
-			specContext.lineTo((i)*channelWidth,specHeight);*/
-		
+			
 			specContext.strokeStyle = specContext.fillStyle;
 			//specContext.stroke();
 			
 			
 			specContext.strokeRect((i+1)*channelWidth + specDrawBounds[0], specDrawBounds[3],-1*channelWidth, -1*spectrumChannels[i]);
 			
-			/*specContext.fillStyle = "rgba(255,255,0,0.7)";
-		    specContext.font="9px Helvetica";
-		    specContext.textAlign = "center";
-		    specContext.fillText(i,(i+1)*channelWidth + specDrawBounds[0], specDrawBounds[3]-1*spectrumChannels[i]);*/		
+			
 		
-	}
+	}*/
 	
 	if(pause){
 	requestAnimationFrame(drawSpectra);
@@ -387,9 +382,9 @@ function resetScreen(){
 }
 
 function createPhoton(p){
-	var chan = sampleFromCDF(spectrumCDF);
+	var chan = testSource.sampleCDF(testSource.spectrumCDF);
 	var chanMin = map_range(chan,0, spectrumCDF.length, minVisEn, maxVisEn);
-	var chanMax = chanMin + (maxVisEn-minVisEn)/(spectrumCDF.length);
+	var chanMax = chanMin + (maxVisEn-minVisEn)/(testSource.spectrumCDF.length);
 		
 		var en = map_range(Math.random(),0,1,chanMin,chanMax);
 		var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
@@ -577,9 +572,22 @@ function Optics(canvas) {
 }
 
 
-function Spectrum(canvas, encDiv, chanWidth) {
+function Spectrum(cnv, div, cWidth) {
 
-this.normSpectrum  = function(s){
+
+	function updateSpectrum(s,c){
+		s[c] = constrain(mY - (canvas.height - drawBounds[3]),0,(drawBounds[3] - drawBounds[2]));
+	
+		if(c > 1 && c < s.length - 2){
+			s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
+			s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
+		}
+		spectrumCDF = new Array();
+		spectrumCDF = makeCDF(normSpectrum(s));
+
+	}	
+
+	function normSpectrum(s){
 		var S = 0;
 		var N = new Array();
 		for(var i = 0; i < s.length; i++){
@@ -595,7 +603,7 @@ this.normSpectrum  = function(s){
 		return(N);
 	}
 
-	this.makeCDF = function(N){
+	function makeCDF(N){
 		var CDF = new Array();
 		CDF.push(N[0]);
 		for(var i = 1; i < N.length; i++){
@@ -605,23 +613,7 @@ this.normSpectrum  = function(s){
 		return(CDF);	
 	}
 	
-	this.updateSpectrum = function(s,c){
-		s[c] = constrain(mouseY - (this.canvas.height - this.drawBounds[3]),0,(this.drawBounds[3] - 		this.drawBounds[2]));
-	
-		if(c > 1 && c < s.length - 2){
-			s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
-			s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
-		}
-		this.spectrumCDF = new Array();
-		this.spectrumCDF = makeCDF(this.normSpectrum(s));
-
-	}	
-
-
-
-
-
-this.sampleCDF = function(CDF){
+	function sampleCDF(CDF){
 		var sample = Math.random();
 		for(var i = 0; i < CDF.length; i++){
 			if(sample < CDF[i]){
@@ -630,58 +622,61 @@ this.sampleCDF = function(CDF){
 			}
 		}
 	}
-		console.log(encDiv);
-	this.encDiv = document.querySelector(encDiv);
-	console.log(this.encDiv.offsetLeft);
+	
+	var encDiv = document.querySelector(div);
+	console.log(encDiv.offsetLeft);
 
-	this.canvas = document.querySelector(canvas);
-	console.log(this.canvas.offsetLeft);
+	var canvas = document.querySelector(cnv);
+	console.log(canvas.offsetLeft);
 
-	this.ctx = this.canvas.getContext("2d");
+	var ctx = canvas.getContext("2d");
 	
-	this.canvas.style.cursor = "crosshair";
-	this.drawBounds = [0.15*this.canvas.width, 0.95*this.canvas.width, 0.20*this.canvas.height, 0.85*this.canvas.height];
-	console.log(this.drawBounds);
-	this.spectrumCDF = new Array();
-	this.mouseStillDown = false;
-	this.chanWidth = chanWidth;
-	this.channels = new Array();
+	canvas.style.cursor = "crosshair";
+	var drawBounds = [0.15*canvas.width, 0.95*canvas.width, 0.20*canvas.height, 0.85*canvas.height];
+	console.log(drawBounds);
+	var spectrumCDF = new Array();
+	var mStillDown = false;
+	var chanWidth = cWidth;
+	var channels = Math.round((drawBounds[1] - drawBounds[0])/chanWidth);
+	var channelArray = new Array();
 	
-	this.mouseX = 0;
-	this.mouseY = 0;
+	var mX = 0;
+	var mY = 0;
 	
-	for(var i = 0; i<this.drawBounds.length; i++){
-	this.drawBounds[i] = Math.round(this.drawBounds[i]);
-	}
-	
-	for(var i = 0; i < this.channels + 1; i++){
-		this.channels.push(Math.round(this.canvas.height/2));
-		this.spectrumCDF = this.makeCDF(this.normSpectrum(this.channels));
+	for(var i = 0; i < drawBounds.length; i++){
+		drawBounds[i] = Math.round(drawBounds[i]);
 	}
 	
 
 	
-	this.canvas.addEventListener('mousemove', function(event){
-		this.mouseX = event.pageX - canvas.offsetLeft - encDiv.offsetLeft;
-		this.mouseY = canvas.height - (event.pageY - canvas.offsetTop - encDiv.offsetTop);
-		if(this.mouseStillDown){
-			var thisChannel = constrain(Math.floor((mouseX - drawBounds[0])/chanWidth),0,channels.length - 1);
-			updateSpectrum(channels,thisChannel);
+	for(var i = 0; i < channels + 1; i++){
+		channelArray.push(Math.round(canvas.height/2));
+		spectrumCDF = makeCDF(normSpectrum(channelArray));
+	}
+	
+
+	
+	canvas.addEventListener('mousemove', function(event){
+		mX = event.pageX - canvas.offsetLeft - encDiv.offsetLeft;
+		mY = canvas.height - (event.pageY - canvas.offsetTop - encDiv.offsetTop); 
+		if(mStillDown){
+			var thisChannel = constrain(Math.floor((mX - drawBounds[0])/chanWidth),0,channelArray.length - 1);
+			updateSpectrum(channelArray,thisChannel);
 		}
 	});
 	
-	this.canvas.addEventListener('mousedown', function(event){
-		var thisChannel = constrain(Math.floor((mouseX - drawBounds[0])/chanWidth),0,channels.length - 1);
-		updateSpectrum(channels,thisChannel);
-		mouseStillDown = true;
+	canvas.addEventListener('mousedown', function(event){
+		var thisChannel = constrain(Math.floor((mX - drawBounds[0])/chanWidth),0,channelArray.length - 1);
+		updateSpectrum(channelArray,thisChannel);
+		mStillDown = true;
 	});
 	
-	this.canvas.addEventListener('mouseup', function(event){
-		mouseStillDown = false;
+	canvas.addEventListener('mouseup', function(event){
+		mStillDown = false;
 	});
 	
-	this.canvas.addEventListener('mouseout', function(event){
-		this.mouseStillDown = false;
+	canvas.addEventListener('mouseout', function(event){
+		mStillDown = false;
 	});
 
 	
@@ -690,18 +685,18 @@ this.sampleCDF = function(CDF){
 	
 this.render = function(){
    
-		this.ctx.fillStyle = "rgba(0,0,0,1)";
-		this.ctx.fillRect(0,0, this.canvas.width, this.canvas.height);
-		this.ctx.fillStyle = "rgba(255,255,0,0.7)";
-		this.ctx.font="80px Helvetica";
-		this.ctx.textAlign = "center";
-		this.ctx.fillText(this.mouseX + ", " + this.mouseY,this.canvas.width/2 ,this.canvas.height/2 );
+		ctx.fillStyle = "rgba(0,0,0,1)";
+		ctx.fillRect(0,0, canvas.width, canvas.height);
+		ctx.fillStyle = "rgba(255,255,0,0.7)";
+		ctx.font="80px Helvetica";
+		ctx.textAlign = "center";
+		ctx.fillText(mX + ", " + mY, canvas.width/2 ,canvas.height/2 );
 
-		for(var i = 0; i < this.channels.length; i++){
-			var col = Math.round(map_range(i, 0, this.channels.length, 0, 265));
-			this.ctx.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
-			this.ctx.strokeStyle = this.ctx.fillStyle;
-			this.ctx.strokeRect((i+1)*this.chanWidth + this.drawBounds[0], this.drawBounds[3],-1*this.chanWidth, -1*this.channels[i]);	
+		for(var i = 0; i < channelArray.length; i++){
+			var col = Math.round(map_range(i, 0, channelArray.length, 0, 265));
+			ctx.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
+			ctx.strokeStyle = ctx.fillStyle;
+			ctx.strokeRect((i+1)*chanWidth + drawBounds[0], drawBounds[3],-1*chanWidth, -1*channelArray[i]);	
 		
 		}
 	
