@@ -558,11 +558,30 @@ function Impact(posX, posY, col){
 }
 
 ////////////////////
-function Optics() {
+function Optics(canvas) {
+	var thisSpectrum = new Spectrum(canvas);
 }
 
 
-function Spectrum() {
+function Spectrum(canvas) {
+
+	this.drawBounds = new Array();
+	this.spectrumCDF = new Array();
+	this.canvas = canvas;
+	
+	function changeSpectrum(s,c){
+		s[c] = constrain(mouseY - (canvas.height - this.drawBounds[3]),0,(this.drawBounds[3] - 		this.drawBounds[2]));
+	
+		if(c > 1 && c < s.length - 2){
+			s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
+			s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
+		}
+		this.spectrumCDF = new Array();
+		this.spectrumCDF = createCDF(normaliseSpectrum(s));
+
+	}	
+
+
 	function normaliseSpectrum(s){
 		var S = 0;
 		var N = new Array();
