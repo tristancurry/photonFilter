@@ -44,12 +44,23 @@ margin: auto;
     display: block;
 }
 
-#source {
+#filSpec {
+margin: auto;
+    display: block;
+}
+
+.specWrapper {
 position:absolute;
 right:0px;
 width: 550px;
 height: 400px;
 background-color: #999999;
+}
+
+#filter {
+ right:0px;
+ top: 420px;
+ background-color: #FF9933;
 }
 
 #status{
@@ -105,13 +116,15 @@ margin:10px;
 	
 	</div>
 </div>
-<div id="source">
+<div id="source" class="specWrapper">
 <canvas id="spectrum" width="530" height="350"></canvas>
 </div>
-
+<div id="filter" class="specWrapper">
+<canvas id="filSpec" width="530" height="350"></canvas>
+</div>
 
 <script>
-
+"use strict";
 var pause = false;
 	
 	var mouseX = 0;
@@ -124,50 +137,14 @@ var pause = false;
 	document.querySelector("#screen").width = document.querySelector("#screen").height;
 	var mainCanvas = document.querySelector("#screen");
 	var mainContext = mainCanvas.getContext("2d");
-	var source = document.querySelector('#source');
-	var specCanvas = document.querySelector("#spectrum");
-	var specContext = specCanvas.getContext("2d");
 	
-	specCanvas.style.cursor = "crosshair";
-	
-	var specDrawBounds = [0.15*specCanvas.width, 0.95*specCanvas.width, 0.20*specCanvas.height, 0.85*specCanvas.height];
-	for(var i = 0; i<specDrawBounds.length; i++){
-	specDrawBounds[i] = Math.round(specDrawBounds[i]);
-	}
-	
-var mouseStillDown = false;
-	specCanvas.addEventListener('mousemove', function(event){
-			mouseX = event.pageX - specCanvas.offsetLeft - source.offsetLeft;
-			mouseY = specCanvas.height - (event.pageY - specCanvas.offsetTop - source.offsetTop);
-			if(mouseStillDown){
-				var thisChannel = constrain(Math.floor((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
-				changeSpectrum(spectrumChannels,thisChannel);
-			}
-
-	});
-	
-	specCanvas.addEventListener('mousedown', function(event){
-	var thisChannel = constrain(Math.floor((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
-	 changeSpectrum(spectrumChannels,thisChannel);
-	mouseStillDown = true;
-
-	
-	});
-	
-		specCanvas.addEventListener('mouseup', function(event){
-		mouseStillDown = false;
-
-	});
-	
-	specCanvas.addEventListener('mouseout', function(event){
-		mouseStillDown = false;
-	});
 
 	
 	var canvasWidth = mainCanvas.width;
 	var canvasHeight = mainCanvas.height;
-	var specWidth = specCanvas.width;
-	var specHeight = specCanvas.height;
+	
+	
+
 	
 
 
@@ -176,31 +153,44 @@ var mouseStillDown = false;
                             window.webkitRequestAnimationFrame || 
                             window.msRequestAnimationFrame;
 							
-							
 
-var channelWidth = 5;
-var channels = Math.round((specDrawBounds[1] - specDrawBounds[0])/channelWidth);
 	var photons = new Array();
 	var filters = new Array();
 	var impacts = new Array();
-	var spectrumChannels = new Array();
-	var spectrumCDF = new Array();
 	
-	for(var i = 0; i < channels + 1; i++){
-		spectrumChannels.push(Math.round(specHeight/2));
-		spectrumCDF = createCDF(normaliseSpectrum(spectrumChannels));
-	}
 	
+
 	var photonVel = 2; //pixels per frame. This is the speed of light!
+	for (var i = 0; i < 1; i++){
+	var newFilter = new Filter(canvasWidth/2, canvasHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", 5);
+	newFilter.filterSpectrum.name = "Filter";
+	newFilter.filterSpectrum.yAxisLabel = "Probability of transmission (%)";
+	newFilter.filterSpectrum.yAxisMin = 0;
+	newFilter.filterSpectrum.yAxisMax = 100;
+	for(var j = 0; j < newFilter.filterSpectrum.channelArray.length; j++){
+		newFilter.filterSpectrum.channelArray[j] = 0.2*newFilter.filterSpectrum.specHeight;
+	}
+
 	
-	var newFilter = new Filter(canvasWidth/2, canvasHeight/2, 200, 400, 0.00001, photonVel);
 	filters.push(newFilter);
+	}
 
 	var minVisEn = 1.8; //eV
 	var maxVisEn = 3.1; //eV
 	
 	var lampOn = true;
 	var impactsOn = false;
+	
+	var testSource = new Spectrum("#spectrum", "#source", 5);
+	testSource.relative = false;
+	testSource.name = "Source";
+	testSource.yAxisLabel = "Brightness (photons per second)";
+	testSource.yAxisMin = 0;
+	testSource.yAxisMax = Math.round(60*5/testSource.channels);
+		for(var j = 0; j < testSource.channelArray.length; j++){
+		testSource.channelArray[j] = 0.6*testSource.specHeight;
+	}
+
 
 resetScreen();
 drawPhotons();
@@ -224,19 +214,21 @@ function drawPhotons() {
 
 	removeObjects(photons);
 	removeObjects(impacts);
-
-	if(brightness > 0 && lampOn){
+	
+	if(lampOn && brightness > 0){
+	if(testSource.relative){
  	   for (var i = 0; i < 5; i++) {
 		   if(Math.random() <= brightness/100){
-			   createPhoton(photons);
+			   createPhoton(photons, testSource);
 		   }
 		   
 	   }
+   } else {
+		createPhotons(photons, testSource);
    }
-   
+   }
 for(var i = 0; i < filters.length; i++){
-	thisFilter = filters[i];
-	thisFilter.t = trans;
+	var thisFilter = filters[i];
 	thisFilter.update();
 	thisFilter.render();
 }	
@@ -257,37 +249,9 @@ for(var i = 0; i < filters.length; i++){
 }
 
 function drawSpectra(){
-   
-	specContext.fillStyle = "rgba(0,0,0,1)";
-	specContext.fillRect(0,0, specWidth, specHeight);
-	specContext.fillStyle = "rgba(255,255,0,0.7)";
-    specContext.font="80px Helvetica";
-    specContext.textAlign = "center";
-    specContext.fillText(mouseX + ", " + mouseY,specWidth/2 ,specHeight/2 );
-
-	for(var i = 0; i < spectrumChannels.length; i++){
-		var col = Math.round(map_range(i, 0, spectrumChannels.length, 0, 265))
-		specContext.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
-		//specContext.fillRect(i*channelWidth, specHeight - spectrumChannels[i], channelWidth,channelWidth);
-
-			/*specContext.beginPath();
-			specContext.moveTo(i*channelWidth,specHeight - spectrumChannels[i]);
-			specContext.lineTo((i-1)*channelWidth,specHeight - spectrumChannels[i-1]);
-			specContext.moveTo(i*channelWidth,specHeight - spectrumChannels[i]);
-			specContext.lineTo((i)*channelWidth,specHeight);*/
-		
-			specContext.strokeStyle = specContext.fillStyle;
-			//specContext.stroke();
-			
-			
-			specContext.strokeRect((i+1)*channelWidth + specDrawBounds[0], specDrawBounds[3],-1*channelWidth, -1*spectrumChannels[i]);
-			
-			/*specContext.fillStyle = "rgba(255,255,0,0.7)";
-		    specContext.font="9px Helvetica";
-		    specContext.textAlign = "center";
-		    specContext.fillText(i,(i+1)*channelWidth + specDrawBounds[0], specDrawBounds[3]-1*spectrumChannels[i]);*/		
-		
-	}
+	filters[0].filterSpectrum.render();
+	testSource.render();
+	
 	
 	if(pause){
 	requestAnimationFrame(drawSpectra);
@@ -295,18 +259,6 @@ function drawSpectra(){
 }
 
 
-function changeSpectrum(s,c){
-	s[c] = constrain(mouseY - (specCanvas.height - specDrawBounds[3]),0,(specDrawBounds[3] - specDrawBounds[2]));
-	
-	if(c > 1 && c < s.length - 2){
-		s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
-		s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
-	}
-
-	spectrumCDF = new Array();
-	spectrumCDF = createCDF(normaliseSpectrum(s));
-
-}
 
 
 function constrain (val, min, max) {
@@ -314,7 +266,7 @@ function constrain (val, min, max) {
 }
 
 function map_range (val, oldLow, oldHigh, newLow, newHigh){
-return(((oldLow + val)/(oldHigh - oldLow))*(newHigh - newLow) + newLow);
+return(((val - oldLow)/(oldHigh - oldLow))*(newHigh - newLow) + newLow);
 
 }
 
@@ -372,26 +324,54 @@ function resetScreen(){
 	requestAnimationFrame(drawPhotons);
 }
 
-function createPhoton(p){
-	var chan = sampleFromCDF(spectrumCDF);
-	var chanMin = map_range(chan,0, spectrumCDF.length, minVisEn, maxVisEn);
-	var chanMax = chanMin + (maxVisEn-minVisEn)/(spectrumCDF.length);
-		
-		var en = map_range(Math.random(),0,1,chanMin,chanMax);
-		var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
-		p.push(newPhoton);
-		nIn++;
+function createPhoton(p, src){
+	var chan = src.sampleCDF(src.spectrumCDF);
+	var chanMin = map_range(chan,0, src.spectrumCDF.length, minVisEn, maxVisEn);
+	var chanMax = chanMin + (maxVisEn-minVisEn)/(src.spectrumCDF.length);
+
+	var en = map_range(Math.random(),0,1,chanMin,chanMax);
+	var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
+	p.push(newPhoton);
+
+	nIn++;
 
 }
+
+function createPhotons(p, src){
+	for(var i = 0; i < src.channels; i++){
+		var specBrightness = (src.channelArray[i]/src.specHeight)/src.channels;
+		if(specBrightness > 0){
+			var chanMin = map_range(i,0, src.channels, minVisEn, maxVisEn);
+			var chanMax = chanMin + (maxVisEn-minVisEn)/(src.channels);
+				for(var j = 0; j < 5; j++){
+				if(Math.random() < specBrightness){
+				var en = map_range(Math.random(),0,1,chanMin,chanMax);
+				var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
+				p.push(newPhoton);
+				nIn++;
+				}
+			}
+		}
+	}
+}
+
+
+
+
+
+
 function updatePhotons(p){
 	for(var i = 0; i < p.length; i++) {
 		var thisPhoton = p[i];
 		thisPhoton.update();
 		
 		for(var j = 0; j < filters.length; j++){
+		
 			var thisFilter = filters[j];
+			var fChans = thisFilter.coeffs.length;
 			if(thisPhoton.posX > thisFilter.posX - thisFilter.w/2 && thisPhoton.posX < thisFilter.posX + thisFilter.w/2 && thisPhoton.posY > thisFilter.posY - thisFilter.h/2 && thisPhoton.posY < thisFilter.posY + thisFilter.h/2){
-				if(Math.random()>thisFilter.coeff){
+				var fChan = Math.floor(map_range(thisPhoton.energy, minVisEn, maxVisEn, 0, fChans));
+				if(Math.random()>thisFilter.coeffs[fChan]){
 					thisPhoton.alive = false;
 					if(impactsOn){
 						var newImpact = new Impact(thisPhoton.posX, thisPhoton.posY, thisPhoton.fillStyle);
@@ -427,43 +407,8 @@ for(var i = p.length - 1; i >= 0; i--) {
 	}
 }
 
-function normaliseSpectrum(s){
-	var S = 0;
-	var N = new Array();
-	for(var i = 0; i < s.length; i++){
-		S = S + s[i];
-	}
-	for(var i = 0; i < s.length; i++){
-		if(S == 0){
-			N.push(1/s.length);
-		} else {
-			N.push(s[i]/S);
-		}
-	}
-	return(N);
-}
 
-function createCDF(N){
-	var CDF = new Array();
-	CDF.push(N[0]);
-	for(var i = 1; i < N.length; i++){
-		CDF.push(CDF[i-1] + N[i]);
-	}
-	
-	return(CDF);
-	
-}
 
-function sampleFromCDF(CDF){
-	var sample = Math.random();
-	for(var i = 0; i < CDF.length; i++){
-		if(sample < CDF[i]){
-			return(i);
-			break;
-		}
-	
-	}
-}
 
 //Object definitions							
 							
@@ -505,7 +450,7 @@ function Photon(posX, posY, velX, velY, energy) {
 
 }
 
-function Filter(posX, posY, w, h, t, vel){
+function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
 	this.posX = posX;
 	this.posY = posY;
 	this.w = w;
@@ -513,19 +458,36 @@ function Filter(posX, posY, w, h, t, vel){
 	this.t = t;
 	this.vel = vel;
 	
+	this.filterSpectrum = new Spectrum(cnv,div,cWidth);
+			
+	this.coeffs = new Array();
+	
 	this.strokeStyle = "rgba(255,255,0,1)"; //this will later be dependent on its spectral properties?
 	
 	this.update = function(){
-		this.coeff = Math.pow(this.t, this.vel/this.w);
+		this.coeffs = new Array();
+		var fSpec = this.filterSpectrum.channelArray;
+		for(var i = 0; i < this.filterSpectrum.channels; i++){
+		this.coeffs.push(Math.pow(fSpec[i]/this.filterSpectrum.specHeight, this.vel/this.w));
+		}
 	}
+	
+
 	
 	this.render = function(){
 		mainContext.strokeStyle = this.strokeStyle;
 		mainContext.strokeRect(this.posX - w/2, this.posY - h/2,w,h);
+		mainContext.fillStyle = this.strokeStyle;
+		mainContext.font="40px Helvetica";
+		mainContext.textAlign = "center";
+		mainContext.fillText(this.filterSpectrum.name, this.posX,  0.5*(this.posY + h/2 + canvasHeight));
 
 	}
 	
 }
+
+
+
 
 function Impact(posX, posY, col){
 	this.posX = posX;
@@ -548,11 +510,216 @@ function Impact(posX, posY, col){
 	}
 
 	this.render = function(){
-		mainContext.strokeStyle = col;
+		mainContext.strokeStyle = this.col;
 		mainContext.strokeRect(this.posX - this.radius, this.posY - this.radius, this.radius*2,this.radius*2);
 
 	}
 }
+
+////////////////////
+function Optics(canvas) {
+	var thisSpectrum = new Spectrum(canvas);
+}
+
+
+function Spectrum(cnv, div, cWidth) {
+	
+	this.normaliseSpectrum = function(s){
+		var S = 0;
+		var N = new Array();
+		for(var i = 0; i < s.length; i++){
+			S = S + s[i];
+		}
+		for(var i = 0; i < s.length; i++){
+			if(S == 0){
+				N.push(1/s.length);
+			} else {
+				N.push(s[i]/S);
+			}
+		}
+		this.normSpectrum = N;
+		return(N);
+	}
+
+	this.makeCDF = function(N){
+		var CDF = new Array();
+		CDF.push(N[0]);
+		for(var i = 1; i < N.length; i++){
+			CDF.push(CDF[i-1] + N[i]);
+		}
+		return(CDF);	
+	}
+
+
+	this.updateSpectrum = function(s,c){
+		s[c] = constrain(this.mY - (this.canvas.height - this.drawBounds[3]),0,(this.drawBounds[3] - this.drawBounds[2]));
+	
+		if(c > 1 && c < s.length - 2){
+			s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
+			s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
+		}
+		this.spectrumCDF = new Array();
+		this.spectrumCDF = this.makeCDF(this.normaliseSpectrum(s));
+
+	}	
+
+
+	
+ this.sampleCDF = function(CDF){
+		var sample = Math.random();
+		for(var i = 0; i < CDF.length; i++){
+			if(sample < CDF[i]){
+				return(i);
+
+				break;
+			}
+		}
+	}
+	
+	this.encDiv = document.querySelector(div);
+
+	this.canvas = document.querySelector(cnv);
+
+	this.ctx = this.canvas.getContext("2d");
+	
+	this.canvas.style.cursor = "crosshair";
+	this.drawBounds = [0.15*this.canvas.width, 0.95*this.canvas.width, 0.20*this.canvas.height, 0.85*this.canvas.height];
+	this.specWidth = this.drawBounds[1] - this.drawBounds[0];
+	this.specHeight = this.drawBounds[3] - this.drawBounds[2];
+	this.spectrumCDF = new Array();
+	this.mStillDown = false;
+	this.chanWidth = cWidth;
+	this.channels = Math.round((this.drawBounds[1] - this.drawBounds[0])/this.chanWidth);
+	this.channelArray = new Array();
+	this.normSpectrum = new Array();
+	
+	this.mX = 0;
+	this.mY = 0;
+	
+	this.relative = false;
+	this.name = "";
+	this.yAxisLabel = "";
+	this.yAxisMin = 0;
+	this.yAxisMax = 100;
+	this.xAxisLabel = "Photon energy (eV)";
+	this.xAxisMin = 1.8;
+	this.xAxisMax = 3.1;
+	console.log(this.xAxisMax);
+	
+	var self = this;
+	
+	for(var i = 0; i < this.drawBounds.length; i++){
+		this.drawBounds[i] = Math.round(this.drawBounds[i]);
+	}
+	
+
+	
+	for(var i = 0; i < this.channels + 1; i++){
+		this.channelArray.push(Math.round(this.canvas.height/2));
+		this.spectrumCDF = this.makeCDF(this.normaliseSpectrum(this.channelArray));
+	}
+	
+
+	
+	this.canvas.addEventListener('mousemove', function(event){
+		self.mX = event.pageX - self.canvas.offsetLeft - self.encDiv.offsetLeft;
+		self.mY = self.canvas.height - (event.pageY - self.canvas.offsetTop - self.encDiv.offsetTop); 
+		if(self.mStillDown){
+			var thisChannel = constrain(Math.floor((self.mX - self.drawBounds[0])/self.chanWidth),0,self.channelArray.length - 1);
+			self.updateSpectrum(self.channelArray,thisChannel);
+		}
+	});
+	
+	this.canvas.addEventListener('mousedown', function(event){
+		var thisChannel = constrain(Math.floor((self.mX - self.drawBounds[0])/self.chanWidth),0,self.channelArray.length - 1);
+			self.updateSpectrum(self.channelArray,thisChannel);
+		self.mStillDown = true;
+	});
+	
+	this.canvas.addEventListener('mouseup', function(event){
+		self.mStillDown = false;
+	});
+	
+	this.canvas.addEventListener('mouseout', function(event){
+		self.mStillDown = false;
+	});
+
+	
+	this.drawAxes = function(){
+	
+		var ticks = 10;
+		this.ctx.beginPath();
+		this.ctx.strokeStyle = "rgb(255,255,255)";
+		this.ctx.fillStyle = "rgb(255,255,255)";
+		this.ctx.font="12px Helvetica";
+		this.ctx.textAlign = "center";
+		this.ctx.save();
+		this.ctx.translate(this.drawBounds[0],this.drawBounds[3]);
+		this.ctx.fillText(this.xAxisMin, 0, 20);
+		this.ctx.fillText(this.xAxisMax, this.specWidth + this.chanWidth, 20);
+		this.ctx.textAlign = "right";
+		this.ctx.textBaseline = "middle";
+		this.ctx.fillText(this.yAxisMin, -15, 0);
+		this.ctx.fillText(this.yAxisMax, -15, -1*this.specHeight);
+
+		for(var k = 0; k < ticks+1; k++){
+			var x = k*(this.specWidth + this.chanWidth)/ticks;
+			var y = -1*k*this.specHeight/ticks;
+			this.ctx.moveTo(x, 0);
+			this.ctx.lineTo(x, 10);
+			this.ctx.moveTo(0, y);
+			this.ctx.lineTo(-10, y);
+			
+		}
+		
+
+		
+this.ctx.moveTo(0,0);
+this.ctx.lineTo(this.specWidth + 0.5*(this.canvas.width - this.drawBounds[1]) ,0);
+this.ctx.moveTo(0,0);
+this.ctx.lineTo(0,-1*(this.specHeight + 0.5*(this.canvas.height - this.drawBounds[3])));
+this.ctx.stroke();
+this.ctx.restore();
+
+		this.ctx.fillStyle = "rgb(255,255,255)";
+		this.ctx.font="15px Helvetica";
+		this.ctx.textAlign = "right";
+		this.ctx.fillText(this.xAxisLabel, Math.round(0.5*(this.drawBounds[1] + this.canvas.width)) ,Math.round(0.7*this.canvas.height + 0.3*this.drawBounds[3]));
+		
+		
+		this.ctx.save();
+		this.ctx.translate(Math.round(0.3*this.drawBounds[0]),Math.round(0.5*this.drawBounds[2]));
+		this.ctx.rotate(Math.PI/2);
+		this.ctx.textAlign = "left";
+		this.ctx.fillText(this.yAxisLabel,0, 0);
+		
+		this.ctx.restore();
+		
+	}
+	
+	
+this.render = function(){
+   
+		this.ctx.fillStyle = "rgba(0,0,0,1)";
+		this.ctx.fillRect(0,0, this.canvas.width, this.canvas.height);
+		this.ctx.fillStyle = "rgba(255,255,0,0.7)";
+		this.ctx.font="80px Helvetica";
+		this.ctx.textAlign = "center";
+		this.ctx.save();
+		this.ctx.translate(this.drawBounds[0],this.drawBounds[3]);
+		this.ctx.fillText(this.name, this.specWidth/2 ,-1*this.specHeight/2);
+		this.ctx.restore();
+		for(var i = 0; i < this.channelArray.length; i++){
+			var col = Math.round(map_range(i, 0, this.channelArray.length, 0, 265));
+			this.ctx.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
+			this.ctx.strokeStyle = this.ctx.fillStyle;
+			this.ctx.strokeRect((i+1)*this.chanWidth + this.drawBounds[0], this.drawBounds[3],-1*this.chanWidth, -1*this.channelArray[i]);	
+		
+		}
+		this.drawAxes();
+	}
+}
+
 
 
 </script>
