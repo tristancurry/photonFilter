@@ -275,28 +275,6 @@ function drawSpectra(){
 	testFilter.render();
 	testSource.render();
 	
-	/*specContext.fillStyle = "rgba(0,0,0,1)";
-	specContext.fillRect(0,0, specWidth, specHeight);
-	specContext.fillStyle = "rgba(255,255,0,0.7)";
-    specContext.font="80px Helvetica";
-    specContext.textAlign = "center";
-    specContext.fillText(mouseX + ", " + mouseY,specWidth/2 ,specHeight/2 );
-
-	for(var i = 0; i < spectrumChannels.length; i++){
-		var col = Math.round(map_range(i, 0, spectrumChannels.length, 0, 265))
-		specContext.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
-		//specContext.fillRect(i*channelWidth, specHeight - spectrumChannels[i], channelWidth,channelWidth);
-
-			
-			specContext.strokeStyle = specContext.fillStyle;
-			//specContext.stroke();
-			
-			
-			specContext.strokeRect((i+1)*channelWidth + specDrawBounds[0], specDrawBounds[3],-1*channelWidth, -1*spectrumChannels[i]);
-			
-			
-		
-	}*/
 	
 	if(pause){
 	requestAnimationFrame(drawSpectra);
@@ -385,6 +363,7 @@ function createPhoton(p){
 	var chan = testSource.sampleCDF(testSource.spectrumCDF);
 	var chanMin = map_range(chan,0, spectrumCDF.length, minVisEn, maxVisEn);
 	var chanMax = chanMin + (maxVisEn-minVisEn)/(testSource.spectrumCDF.length);
+		//console.log("channel: " + chan + ", chanMin: " + chanMin + ", chanMax: " + chanMax );
 		
 		var en = map_range(Math.random(),0,1,chanMin,chanMax);
 		var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
@@ -573,21 +552,8 @@ function Optics(canvas) {
 
 
 function Spectrum(cnv, div, cWidth) {
-
-
-	function updateSpectrum(s,c){
-		s[c] = constrain(mY - (canvas.height - drawBounds[3]),0,(drawBounds[3] - drawBounds[2]));
 	
-		if(c > 1 && c < s.length - 2){
-			s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
-			s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
-		}
-		spectrumCDF = new Array();
-		spectrumCDF = makeCDF(normSpectrum(s));
-
-	}	
-
-	function normSpectrum(s){
+	this.normSpectrum = function(s){
 		var S = 0;
 		var N = new Array();
 		for(var i = 0; i < s.length; i++){
@@ -603,37 +569,49 @@ function Spectrum(cnv, div, cWidth) {
 		return(N);
 	}
 
-	function makeCDF(N){
+	this.makeCDF = function(N){
 		var CDF = new Array();
 		CDF.push(N[0]);
 		for(var i = 1; i < N.length; i++){
 			CDF.push(CDF[i-1] + N[i]);
 		}
-	
 		return(CDF);	
 	}
+
+
+	this.updateSpectrum = function(s,c){
+		s[c] = constrain(mY - (canvas.height - drawBounds[3]),0,(drawBounds[3] - drawBounds[2]));
 	
-	function sampleCDF(CDF){
+		if(c > 1 && c < s.length - 2){
+			s[c + 1] = Math.round(0.5*s[c]+ 0.5*s[c + 2]);
+			s[c - 1] = Math.round(0.5*s[c]+ 0.5*s[c - 2]);
+		}
+		this.spectrumCDF = new Array();
+		this.spectrumCDF = this.makeCDF(this.normSpectrum(s));
+
+	}	
+
+
+	
+ this.sampleCDF = function(CDF){
 		var sample = Math.random();
 		for(var i = 0; i < CDF.length; i++){
 			if(sample < CDF[i]){
 				return(i);
+
 				break;
 			}
 		}
 	}
 	
 	var encDiv = document.querySelector(div);
-	console.log(encDiv.offsetLeft);
 
 	var canvas = document.querySelector(cnv);
-	console.log(canvas.offsetLeft);
 
 	var ctx = canvas.getContext("2d");
 	
 	canvas.style.cursor = "crosshair";
 	var drawBounds = [0.15*canvas.width, 0.95*canvas.width, 0.20*canvas.height, 0.85*canvas.height];
-	console.log(drawBounds);
 	var spectrumCDF = new Array();
 	var mStillDown = false;
 	var chanWidth = cWidth;
@@ -643,6 +621,8 @@ function Spectrum(cnv, div, cWidth) {
 	var mX = 0;
 	var mY = 0;
 	
+	var self = this;
+	
 	for(var i = 0; i < drawBounds.length; i++){
 		drawBounds[i] = Math.round(drawBounds[i]);
 	}
@@ -651,7 +631,7 @@ function Spectrum(cnv, div, cWidth) {
 	
 	for(var i = 0; i < channels + 1; i++){
 		channelArray.push(Math.round(canvas.height/2));
-		spectrumCDF = makeCDF(normSpectrum(channelArray));
+		this.spectrumCDF = this.makeCDF(this.normSpectrum(channelArray));
 	}
 	
 
@@ -661,13 +641,13 @@ function Spectrum(cnv, div, cWidth) {
 		mY = canvas.height - (event.pageY - canvas.offsetTop - encDiv.offsetTop); 
 		if(mStillDown){
 			var thisChannel = constrain(Math.floor((mX - drawBounds[0])/chanWidth),0,channelArray.length - 1);
-			updateSpectrum(channelArray,thisChannel);
+			self.updateSpectrum(channelArray,thisChannel);
 		}
 	});
 	
 	canvas.addEventListener('mousedown', function(event){
 		var thisChannel = constrain(Math.floor((mX - drawBounds[0])/chanWidth),0,channelArray.length - 1);
-		updateSpectrum(channelArray,thisChannel);
+		self.updateSpectrum(channelArray,thisChannel);
 		mStillDown = true;
 	});
 	
