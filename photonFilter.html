@@ -176,7 +176,7 @@ var pause = false;
 
 	var photonVel = 2; //pixels per frame. This is the speed of light!
 	for (var i = 0; i < 1; i++){
-	var newFilter = new Filter(canvasWidth/2, canvasHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", 5);
+	var newFilter = new Filter(canvasWidth/2, canvasHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", 4);
 	newFilter.filterSpectrum.name = "Filter";
 	newFilter.filterSpectrum.yAxisLabel = "Probability of transmission (%)";
 	newFilter.filterSpectrum.yAxisMin = 0;
@@ -195,12 +195,12 @@ var pause = false;
 	var lampOn = true;
 	var impactsOn = false;
 	
-	var testSource = new Spectrum("#spectrum", "#source", 5);
+	var testSource = new Spectrum("#spectrum", "#source", 4);
 	testSource.relative = false;
 	testSource.name = "Source";
 	testSource.yAxisLabel = "Brightness (photons per second)";
 	testSource.yAxisMin = 0;
-	testSource.yAxisMax = Math.round(60*5/testSource.channels);
+	testSource.yAxisMax = Math.round(60*10/testSource.channels);
 		for(var j = 0; j < testSource.channelArray.length; j++){
 		testSource.channelArray[j] = 0.6*testSource.specHeight;
 	}
@@ -212,8 +212,8 @@ for(var i =0; i<testSource.channelArray.length; i++){
 	photonCounts.push(0);
 }	
 
-var countCount = new Spectrum("#cromSpec", "#crom", 5);
-countCount.name = "Detections";
+var countCount = new Spectrum("#cromSpec", "#crom", 4);
+countCount.name = "Detected";
 countCount.yAxisLabel = "Number of photons";
 
 
@@ -246,7 +246,7 @@ function drawPhotons() {
 	
 	if(lampOn && brightness > 0){
 	if(testSource.relative){
- 	   for (var i = 0; i < 5; i++) {
+ 	   for (var i = 0; i < 10; i++) {
 		   if(Math.random() <= brightness/100){
 			   createPhoton(photons, testSource);
 		   }
@@ -390,7 +390,7 @@ function createPhotons(p, src){
 		if(specBrightness > 0){
 			var chanMin = map_range(i,0, src.channels, minVisEn, maxVisEn);
 			var chanMax = chanMin + (maxVisEn-minVisEn)/(src.channels);
-				for(var j = 0; j < 5; j++){
+				for(var j = 0; j < 10; j++){
 				if(Math.random() < specBrightness){
 				var en = map_range(Math.random(),0,1,chanMin,chanMax);
 				var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
