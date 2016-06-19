@@ -163,6 +163,15 @@ var pause = false;
 	var photonVel = 2; //pixels per frame. This is the speed of light!
 	for (var i = 0; i < 1; i++){
 	var newFilter = new Filter(canvasWidth/2, canvasHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", 5);
+	newFilter.filterSpectrum.name = "Filter";
+	newFilter.filterSpectrum.yAxisLabel = "Probability of transmission (%)";
+	newFilter.filterSpectrum.yAxisMin = 0;
+	newFilter.filterSpectrum.yAxisMax = 100;
+	for(var j = 0; j < newFilter.filterSpectrum.channelArray.length; j++){
+		newFilter.filterSpectrum.channelArray[j] = 0.2*newFilter.filterSpectrum.specHeight;
+	}
+
+	
 	filters.push(newFilter);
 	}
 
@@ -174,6 +183,14 @@ var pause = false;
 	
 	var testSource = new Spectrum("#spectrum", "#source", 5);
 	testSource.relative = false;
+	testSource.name = "Source";
+	testSource.yAxisLabel = "Brightness (photons per second)";
+	testSource.yAxisMin = 0;
+	testSource.yAxisMax = Math.round(60*5/testSource.channels);
+		for(var j = 0; j < testSource.channelArray.length; j++){
+		testSource.channelArray[j] = 0.6*testSource.specHeight;
+	}
+
 
 resetScreen();
 drawPhotons();
@@ -391,6 +408,8 @@ for(var i = p.length - 1; i >= 0; i--) {
 }
 
 
+
+
 //Object definitions							
 							
 function Photon(posX, posY, velX, velY, energy) {
@@ -440,8 +459,7 @@ function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
 	this.vel = vel;
 	
 	this.filterSpectrum = new Spectrum(cnv,div,cWidth);
-			console.log(this.filterSpectrum.channels);
-		
+			
 	this.coeffs = new Array();
 	
 	this.strokeStyle = "rgba(255,255,0,1)"; //this will later be dependent on its spectral properties?
@@ -454,9 +472,15 @@ function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
 		}
 	}
 	
+
+	
 	this.render = function(){
 		mainContext.strokeStyle = this.strokeStyle;
 		mainContext.strokeRect(this.posX - w/2, this.posY - h/2,w,h);
+		mainContext.fillStyle = this.strokeStyle;
+		mainContext.font="40px Helvetica";
+		mainContext.textAlign = "center";
+		mainContext.fillText(this.filterSpectrum.name, this.posX,  0.5*(this.posY + h/2 + canvasHeight));
 
 	}
 	
@@ -560,6 +584,7 @@ function Spectrum(cnv, div, cWidth) {
 	
 	this.canvas.style.cursor = "crosshair";
 	this.drawBounds = [0.15*this.canvas.width, 0.95*this.canvas.width, 0.20*this.canvas.height, 0.85*this.canvas.height];
+	this.specWidth = this.drawBounds[1] - this.drawBounds[0];
 	this.specHeight = this.drawBounds[3] - this.drawBounds[2];
 	this.spectrumCDF = new Array();
 	this.mStillDown = false;
@@ -572,6 +597,14 @@ function Spectrum(cnv, div, cWidth) {
 	this.mY = 0;
 	
 	this.relative = false;
+	this.name = "";
+	this.yAxisLabel = "";
+	this.yAxisMin = 0;
+	this.yAxisMax = 100;
+	this.xAxisLabel = "Photon energy (eV)";
+	this.xAxisMin = 1.8;
+	this.xAxisMax = 3.1;
+	console.log(this.xAxisMax);
 	
 	var self = this;
 	
@@ -612,7 +645,57 @@ function Spectrum(cnv, div, cWidth) {
 	});
 
 	
+	this.drawAxes = function(){
+	
+		var ticks = 10;
+		this.ctx.beginPath();
+		this.ctx.strokeStyle = "rgb(255,255,255)";
+		this.ctx.fillStyle = "rgb(255,255,255)";
+		this.ctx.font="12px Helvetica";
+		this.ctx.textAlign = "center";
+		this.ctx.save();
+		this.ctx.translate(this.drawBounds[0],this.drawBounds[3]);
+		this.ctx.fillText(this.xAxisMin, 0, 20);
+		this.ctx.fillText(this.xAxisMax, this.specWidth + this.chanWidth, 20);
+		this.ctx.textAlign = "right";
+		this.ctx.textBaseline = "middle";
+		this.ctx.fillText(this.yAxisMin, -15, 0);
+		this.ctx.fillText(this.yAxisMax, -15, -1*this.specHeight);
 
+		for(var k = 0; k < ticks+1; k++){
+			var x = k*(this.specWidth + this.chanWidth)/ticks;
+			var y = -1*k*this.specHeight/ticks;
+			this.ctx.moveTo(x, 0);
+			this.ctx.lineTo(x, 10);
+			this.ctx.moveTo(0, y);
+			this.ctx.lineTo(-10, y);
+			
+		}
+		
+
+		
+this.ctx.moveTo(0,0);
+this.ctx.lineTo(this.specWidth + 0.5*(this.canvas.width - this.drawBounds[1]) ,0);
+this.ctx.moveTo(0,0);
+this.ctx.lineTo(0,-1*(this.specHeight + 0.5*(this.canvas.height - this.drawBounds[3])));
+this.ctx.stroke();
+this.ctx.restore();
+
+		this.ctx.fillStyle = "rgb(255,255,255)";
+		this.ctx.font="15px Helvetica";
+		this.ctx.textAlign = "right";
+		this.ctx.fillText(this.xAxisLabel, Math.round(0.5*(this.drawBounds[1] + this.canvas.width)) ,Math.round(0.7*this.canvas.height + 0.3*this.drawBounds[3]));
+		
+		
+		this.ctx.save();
+		this.ctx.translate(Math.round(0.3*this.drawBounds[0]),Math.round(0.5*this.drawBounds[2]));
+		this.ctx.rotate(Math.PI/2);
+		this.ctx.textAlign = "left";
+		this.ctx.fillText(this.yAxisLabel,0, 0);
+		
+		this.ctx.restore();
+		
+	}
 	
 	
 this.render = function(){
@@ -622,8 +705,10 @@ this.render = function(){
 		this.ctx.fillStyle = "rgba(255,255,0,0.7)";
 		this.ctx.font="80px Helvetica";
 		this.ctx.textAlign = "center";
-		this.ctx.fillText(this.mX + ", " + this.mY, this.canvas.width/2 ,this.canvas.height/2 );
-
+		this.ctx.save();
+		this.ctx.translate(this.drawBounds[0],this.drawBounds[3]);
+		this.ctx.fillText(this.name, this.specWidth/2 ,-1*this.specHeight/2);
+		this.ctx.restore();
 		for(var i = 0; i < this.channelArray.length; i++){
 			var col = Math.round(map_range(i, 0, this.channelArray.length, 0, 265));
 			this.ctx.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
@@ -631,7 +716,7 @@ this.render = function(){
 			this.ctx.strokeRect((i+1)*this.chanWidth + this.drawBounds[0], this.drawBounds[3],-1*this.chanWidth, -1*this.channelArray[i]);	
 		
 		}
-	
+		this.drawAxes();
 	}
 }
 
