@@ -49,18 +49,29 @@ margin: auto;
     display: block;
 }
 
+#cromSpec {
+margin: auto;
+    display: block;
+}
+
 .specWrapper {
 position:absolute;
 right:0px;
 width: 550px;
-height: 400px;
+height: 350px;
 background-color: #999999;
 }
 
 #filter {
  right:0px;
- top: 420px;
+ top: 350px;
  background-color: #FF9933;
+}
+
+#crom {
+ right:0px;
+ top: 700px;
+ background-color: #99FF33;
 }
 
 #status{
@@ -117,10 +128,13 @@ margin:10px;
 	</div>
 </div>
 <div id="source" class="specWrapper">
-<canvas id="spectrum" width="530" height="350"></canvas>
+<canvas id="spectrum" width="530" height="300"></canvas>
 </div>
 <div id="filter" class="specWrapper">
-<canvas id="filSpec" width="530" height="350"></canvas>
+<canvas id="filSpec" width="530" height="300"></canvas>
+</div>
+<div id="crom" class="specWrapper">
+<canvas id="cromSpec" width="530" height="300"></canvas>
 </div>
 
 <script>
@@ -190,10 +204,25 @@ var pause = false;
 		for(var j = 0; j < testSource.channelArray.length; j++){
 		testSource.channelArray[j] = 0.6*testSource.specHeight;
 	}
+	
 
 
+var photonCounts = new Array();
+for(var i =0; i<testSource.channelArray.length; i++){
+	photonCounts.push(0);
+}	
+
+var countCount = new Spectrum("#cromSpec", "#crom", 5);
+countCount.name = "Detections";
+countCount.yAxisLabel = "Number of photons";
+
+
+
+	
 resetScreen();
 drawPhotons();
+
+
 
 function drawPhotons() {
 	drawSpectra();
@@ -232,7 +261,6 @@ for(var i = 0; i < filters.length; i++){
 	thisFilter.update();
 	thisFilter.render();
 }	
-   
 
    
    if(!pause){
@@ -251,7 +279,22 @@ for(var i = 0; i < filters.length; i++){
 function drawSpectra(){
 	filters[0].filterSpectrum.render();
 	testSource.render();
+	var bigUps = Math.max(Math.max.apply(Math, photonCounts),1); 
+	countCount.yAxisMax = bigUps;
+	//countCount.channelArray = countCount.normaliseSpectrum(photonCounts);
+
 	
+	for(var i = 0; i < countCount.channelArray.length; i++){
+		if(bigUps > 0){
+			countCount.channelArray[i] = countCount.specHeight*photonCounts[i]/bigUps;
+		} else {
+		countCount.channelArray[i] = 0;
+		}
+	}
+	
+	 
+	countCount.render();
+
 	
 	if(pause){
 	requestAnimationFrame(drawSpectra);
@@ -321,6 +364,10 @@ function resetScreen(){
 	nIn = 0;
 	nOut = 0;
 	
+	for(var i = 0; i<photonCounts.length; i++){
+		photonCounts[i] = 0;
+	}
+	
 	requestAnimationFrame(drawPhotons);
 }
 
@@ -383,6 +430,8 @@ function updatePhotons(p){
 		
 		if(thisPhoton.posX > canvasWidth || thisPhoton.posX < 0 || thisPhoton.posY > canvasHeight || thisPhoton.posY < 0){
 			thisPhoton.alive = false;
+			var chan = Math.floor(map_range(thisPhoton.energy, minVisEn, maxVisEn, 0, photonCounts.length));
+			photonCounts[chan]++;
 			nOut++;
 		}
 		
@@ -604,7 +653,6 @@ function Spectrum(cnv, div, cWidth) {
 	this.xAxisLabel = "Photon energy (eV)";
 	this.xAxisMin = 1.8;
 	this.xAxisMax = 3.1;
-	console.log(this.xAxisMax);
 	
 	var self = this;
 	
