@@ -137,49 +137,14 @@ var pause = false;
 	document.querySelector("#screen").width = document.querySelector("#screen").height;
 	var mainCanvas = document.querySelector("#screen");
 	var mainContext = mainCanvas.getContext("2d");
-	var source = document.querySelector('#source');
-	var specCanvas = document.querySelector("#spectrum");
-	var specContext = specCanvas.getContext("2d");
 	
-specCanvas.style.cursor = "crosshair";
-	
-	var specDrawBounds = [0.15*specCanvas.width, 0.95*specCanvas.width, 0.20*specCanvas.height, 0.85*specCanvas.height];
-	for(var i = 0; i<specDrawBounds.length; i++){
-	specDrawBounds[i] = Math.round(specDrawBounds[i]);
-	}
-	
-var mouseStillDown = false;
-
-specCanvas.addEventListener('mousemove', function(event){
-		mouseX = event.pageX - specCanvas.offsetLeft - source.offsetLeft;
-		mouseY = specCanvas.height - (event.pageY - specCanvas.offsetTop - source.offsetTop);
-		if(mouseStillDown){
-			var thisChannel = constrain(Math.floor((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
-			changeSpectrum(spectrumChannels,thisChannel);
-		}
-	});
-	
-specCanvas.addEventListener('mousedown', function(event){
-	var thisChannel = constrain(Math.floor((mouseX - specDrawBounds[0])/channelWidth),0,spectrumChannels.length - 1);
-	changeSpectrum(spectrumChannels,thisChannel);
-	mouseStillDown = true;
-	
-	});
-	
-specCanvas.addEventListener('mouseup', function(event){
-	mouseStillDown = false;
-
-	});
-	
-specCanvas.addEventListener('mouseout', function(event){
-	mouseStillDown = false;
-	});
 
 	
 	var canvasWidth = mainCanvas.width;
 	var canvasHeight = mainCanvas.height;
-	var specWidth = specCanvas.width;
-	var specHeight = specCanvas.height;
+	
+	
+
 	
 
 
@@ -188,21 +153,20 @@ specCanvas.addEventListener('mouseout', function(event){
                             window.webkitRequestAnimationFrame || 
                             window.msRequestAnimationFrame;
 							
-							
+/*							
 
 var channelWidth = 5;
 var channels = Math.round((specDrawBounds[1] - specDrawBounds[0])/channelWidth);
+
+*/
 	var photons = new Array();
 	var filters = new Array();
 	var impacts = new Array();
-	var spectrumChannels = new Array();
-	var spectrumCDF = new Array();
 	
-	for(var i = 0; i < channels + 1; i++){
-		spectrumChannels.push(Math.round(specHeight/2));
-		spectrumCDF = createCDF(normaliseSpectrum(spectrumChannels));
-	}
+	//var spectrumChannels = new Array();
+	//var spectrumCDF = new Array();
 	
+
 	var photonVel = 2; //pixels per frame. This is the speed of light!
 	
 	var newFilter = new Filter(canvasWidth/2, canvasHeight/2, 200, 400, 0.00001, photonVel);
@@ -361,7 +325,7 @@ function resetScreen(){
 
 function createPhoton(p){
 	var chan = testSource.sampleCDF(testSource.spectrumCDF);
-	var chanMin = map_range(chan,0, spectrumCDF.length, minVisEn, maxVisEn);
+	var chanMin = map_range(chan,0, testSource.spectrumCDF.length, minVisEn, maxVisEn);
 	var chanMax = chanMin + (maxVisEn-minVisEn)/(testSource.spectrumCDF.length);
 		//console.log("channel: " + chan + ", chanMin: " + chanMin + ", chanMax: " + chanMax );
 		
@@ -415,43 +379,6 @@ for(var i = p.length - 1; i >= 0; i--) {
 	}
 }
 
-function normaliseSpectrum(s){
-	var S = 0;
-	var N = new Array();
-	for(var i = 0; i < s.length; i++){
-		S = S + s[i];
-	}
-	for(var i = 0; i < s.length; i++){
-		if(S == 0){
-			N.push(1/s.length);
-		} else {
-			N.push(s[i]/S);
-		}
-	}
-	return(N);
-}
-
-function createCDF(N){
-	var CDF = new Array();
-	CDF.push(N[0]);
-	for(var i = 1; i < N.length; i++){
-		CDF.push(CDF[i-1] + N[i]);
-	}
-	
-	return(CDF);
-	
-}
-
-function sampleFromCDF(CDF){
-	var sample = Math.random();
-	for(var i = 0; i < CDF.length; i++){
-		if(sample < CDF[i]){
-			return(i);
-			break;
-		}
-	
-	}
-}
 
 //Object definitions							
 							
@@ -612,7 +539,7 @@ function Spectrum(cnv, div, cWidth) {
 	
 	canvas.style.cursor = "crosshair";
 	var drawBounds = [0.15*canvas.width, 0.95*canvas.width, 0.20*canvas.height, 0.85*canvas.height];
-	var spectrumCDF = new Array();
+this.spectrumCDF = new Array();
 	var mStillDown = false;
 	var chanWidth = cWidth;
 	var channels = Math.round((drawBounds[1] - drawBounds[0])/chanWidth);
