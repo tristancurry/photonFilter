@@ -173,6 +173,7 @@ var pause = false;
 	var impactsOn = false;
 	
 	var testSource = new Spectrum("#spectrum", "#source", 5);
+	testSource.relative = false;
 
 resetScreen();
 drawPhotons();
@@ -196,16 +197,19 @@ function drawPhotons() {
 
 	removeObjects(photons);
 	removeObjects(impacts);
-
-	if(brightness > 0 && lampOn){
+	
+	if(lampOn && brightness > 0){
+	if(testSource.relative){
  	   for (var i = 0; i < 5; i++) {
 		   if(Math.random() <= brightness/100){
-			   createPhoton(photons);
+			   createPhoton(photons, testSource);
 		   }
 		   
 	   }
+   } else {
+		createPhotons(photons, testSource);
    }
-   
+   }
 for(var i = 0; i < filters.length; i++){
 	var thisFilter = filters[i];
 	thisFilter.update();
@@ -303,18 +307,42 @@ function resetScreen(){
 	requestAnimationFrame(drawPhotons);
 }
 
-function createPhoton(p){
-	var chan = testSource.sampleCDF(testSource.spectrumCDF);
-	var chanMin = map_range(chan,0, testSource.spectrumCDF.length, minVisEn, maxVisEn);
-	var chanMax = chanMin + (maxVisEn-minVisEn)/(testSource.spectrumCDF.length);
-		//console.log("channel: " + chan + ", chanMin: " + chanMin + ", chanMax: " + chanMax );
-		
-		var en = map_range(Math.random(),0,1,chanMin,chanMax);
-		var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
-		p.push(newPhoton);
-		nIn++;
+function createPhoton(p, src){
+	var chan = src.sampleCDF(src.spectrumCDF);
+	var chanMin = map_range(chan,0, src.spectrumCDF.length, minVisEn, maxVisEn);
+	var chanMax = chanMin + (maxVisEn-minVisEn)/(src.spectrumCDF.length);
+
+	var en = map_range(Math.random(),0,1,chanMin,chanMax);
+	var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
+	p.push(newPhoton);
+
+	nIn++;
 
 }
+
+function createPhotons(p, src){
+	for(var i = 0; i < src.channels; i++){
+		var specBrightness = (src.channelArray[i]/src.specHeight)/src.channels;
+		if(specBrightness > 0){
+			var chanMin = map_range(i,0, src.channels, minVisEn, maxVisEn);
+			var chanMax = chanMin + (maxVisEn-minVisEn)/(src.channels);
+				for(var j = 0; j < 5; j++){
+				if(Math.random() < specBrightness){
+				var en = map_range(Math.random(),0,1,chanMin,chanMax);
+				var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*canvasHeight,0.7*canvasHeight), photonVel, 0, en);
+				p.push(newPhoton);
+				nIn++;
+				}
+			}
+		}
+	}
+}
+
+
+
+
+
+
 function updatePhotons(p){
 	for(var i = 0; i < p.length; i++) {
 		var thisPhoton = p[i];
@@ -421,9 +449,8 @@ function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
 	this.update = function(){
 		this.coeffs = new Array();
 		var fSpec = this.filterSpectrum.channelArray;
-		var specHeight = this.filterSpectrum.drawBounds[3] - this.filterSpectrum.drawBounds[2];
 		for(var i = 0; i < this.filterSpectrum.channels; i++){
-		this.coeffs.push(Math.pow(fSpec[i]/specHeight, this.vel/this.w));
+		this.coeffs.push(Math.pow(fSpec[i]/this.filterSpectrum.specHeight, this.vel/this.w));
 		}
 	}
 	
@@ -533,6 +560,7 @@ function Spectrum(cnv, div, cWidth) {
 	
 	this.canvas.style.cursor = "crosshair";
 	this.drawBounds = [0.15*this.canvas.width, 0.95*this.canvas.width, 0.20*this.canvas.height, 0.85*this.canvas.height];
+	this.specHeight = this.drawBounds[3] - this.drawBounds[2];
 	this.spectrumCDF = new Array();
 	this.mStillDown = false;
 	this.chanWidth = cWidth;
@@ -542,6 +570,8 @@ function Spectrum(cnv, div, cWidth) {
 	
 	this.mX = 0;
 	this.mY = 0;
+	
+	this.relative = false;
 	
 	var self = this;
 	
