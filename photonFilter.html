@@ -20,9 +20,6 @@ canvas {
 }
 
 input.comptrol {
-position:relative;
-left:30%;
-width:50%;
 }
 
 #experiment{
@@ -39,18 +36,17 @@ height:80%;
 }
 
 #spectrum {
-
-margin: auto;
+	margin: auto;
     display: block;
 }
 
 #filSpec {
-margin: auto;
+	margin: auto;
     display: block;
 }
 
 #cromSpec {
-margin: auto;
+	margin: auto;
     display: block;
 }
 
@@ -83,7 +79,6 @@ background-color: #999999;
 
 
 label {
-	position:absolute;
 	width:30%;
 }
 
@@ -101,41 +96,38 @@ margin:10px;
 
 <div id = "experiment">
 
-<div id="graphics">
+
 <canvas id="screen" height="600" width="800"></canvas>
-</div>
+
 <h2 id="status">0 | 0</h2>
 <div id = "ui" onmousedown="false">
 	<button type="button" id="lamp" onclick="lampToggle()">Turn lamp off</button>
 	<button type="button" id="impacts" onclick="impactToggle()">Highlight absorptions</button>
 	<button type="button" id="playPause" onclick="buttonChange()">Pause</button>
 	<button type="button" id="reset" onclick="resetScreen()">Reset</button>
-<br>
-	<label for="brightnessS" >Brightness (average photons per second)</label>
-	<input type="range" class="comptrol" id="brightnessS"  min="0" max ="600" step="0.1" value="300" onInput="inputUpdate(value, min, max, id, 'brightnessT')" >
-	<input type="text" class="comptrol"id="brightnessT" min="0" max="600"  value="300" onInput="inputUpdate(value, min, max, id, 'brightnessS')">
 	<br>
-	<label for="transS" >Probability for transmission</label>
-	<input type="range" id="transS" class="comptrol" min = "0" max = "1" step = "0.001" value="0.20" onInput="inputUpdate(value, min,max, id, 'transT')">
-	<input type="text" id="transT" class="comptrol" min = "0" max = "1" step = "any" value="0.20" onInput="inputUpdate(value, min,max, id, 'transS')">
-	<br>	
+	<label id="brightnessDisplay" >Brightness (average photons per second)</label>
+	<br>
+	<label id="transDisplay" >Probability for transmission</label>
+	<br>
 	<label for="fadeS" >Fade rate</label>
 	<input type="range" id="fadeS" class="comptrol" min = "0" max = "100" step = "0.1" value="20" onInput="inputUpdate(value, min, max,id, 'fadeT')">
 	<input type="text" id="fadeT" class="comptrol" min = "0" max = "100" value = "20" onInput="inputUpdate(value, min, max, id, 'fadeS')">
-	<br>	
-
-	
+</div>
+</div>
+<div id="spectra">
+	<div id="source" class="specWrapper">
+		<canvas id="spectrum" width="530" height="300"></canvas>
+	</div>
+	<div id="filter" class="specWrapper">
+		<canvas id="filSpec" width="530" height="300"></canvas>
+	</div>
+	<div id="crom" class="specWrapper">
+		<canvas id="cromSpec" width="530" height="300"></canvas>
 	</div>
 </div>
-<div id="source" class="specWrapper">
-<canvas id="spectrum" width="530" height="300"></canvas>
-</div>
-<div id="filter" class="specWrapper">
-<canvas id="filSpec" width="530" height="300"></canvas>
-</div>
-<div id="crom" class="specWrapper">
-<canvas id="cromSpec" width="530" height="300"></canvas>
-</div>
+
+
 
 <script>
 "use strict";
@@ -145,10 +137,7 @@ var requestAnimationFrame = window.requestAnimationFrame ||
                             window.mozRequestAnimationFrame || 
                             window.webkitRequestAnimationFrame || 
                             window.msRequestAnimationFrame;
-
-
-	
-//document.querySelector("#screen").width = document.querySelector("#screen").height;
+							
 var mainCanvas = document.querySelector("#screen");
 var mainContext = mainCanvas.getContext("2d");
 		
@@ -164,11 +153,8 @@ var nIn = 0;  //number of photons that have been introduced since last reset
 var nOut = 0; //number of photons that have escaped since last reset
 	
 var photons = new Array();  //to store photons currently in the system
-var filters = new Array();	//an array of filters (in case we want more than one!)
 var impacts = new Array();	//to store impact animators
 	
-
-
 var minVisEn = 1.8; //eV
 var maxVisEn = 3.1; //eV
 var photonVel = 2; //pixels per frame. This is the speed of light!
@@ -176,42 +162,37 @@ var photonVel = 2; //pixels per frame. This is the speed of light!
 var lampOn = true;
 var impactsOn = false;
 	
-var testSource = new Spectrum("#spectrum", "#source", defaultChannelWidth);
-testSource.relative = false;
-testSource.name = "Source";
-testSource.yAxisLabel = "Brightness (photons per second)";
-testSource.yAxisMin = 0;
-testSource.yAxisMax = Math.round(maxBrightness/testSource.channels);
-for(var j = 0; j < testSource.channelArray.length; j++){
-	testSource.channelArray[j] = 0.5*testSource.specHeight;
-	testSource.totalValue = testSource.calculateSpectrumTotal();
-	testSource.averageValue = testSource.calculateSpectrumAverage();
+var mainSource = new Spectrum("#spectrum", "#source", defaultChannelWidth);
+mainSource.relative = false;
+mainSource.name = "Source";
+mainSource.yAxisLabel = "Brightness (photons per second)";
+mainSource.yAxisMin = 0;
+mainSource.yAxisMax = Math.round(maxBrightness/mainSource.channels);
+for(var j = 0; j < mainSource.channelArray.length; j++){
+	mainSource.channelArray[j] = 0.5*mainSource.specHeight;
+	mainSource.totalValue = mainSource.calculateSpectrumTotal();
+	mainSource.averageValue = mainSource.calculateSpectrumAverage();
 }
 	
-	
-for (var i = 0; i < 1; i++){
-	var newFilter = new Filter(mainWidth/2, mainHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", defaultChannelWidth);
-	newFilter.filterSpectrum.name = "Filter";
-	newFilter.filterSpectrum.yAxisLabel = "Probability of transmission (%)";
-	newFilter.filterSpectrum.yAxisMin = 0;
-	newFilter.filterSpectrum.yAxisMax = 100;
-		for(var j = 0; j < newFilter.filterSpectrum.channelArray.length; j++){
-			newFilter.filterSpectrum.channelArray[j] = 0.2*newFilter.filterSpectrum.specHeight;
-		}
-	filters.push(newFilter);
+var mainFilter = new Filter(mainWidth/2, mainHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", defaultChannelWidth);
+mainFilter.filterSpectrum.name = "Filter";
+mainFilter.filterSpectrum.yAxisLabel = "Probability of transmission (%)";
+mainFilter.filterSpectrum.yAxisMin = 0;
+mainFilter.filterSpectrum.yAxisMax = 100;
+for(var j = 0; j < mainFilter.filterSpectrum.channelArray.length; j++){
+	mainFilter.filterSpectrum.channelArray[j] = 0.2*mainFilter.filterSpectrum.specHeight;
+	mainFilter.filterSpectrum.totalValue = mainFilter.filterSpectrum.calculateSpectrumTotal();
+	mainFilter.filterSpectrum.averageValue = mainFilter.filterSpectrum.calculateSpectrumAverage();
 }
-
+	
 var photonCounts = new Array();
-	for(var i =0; i<testSource.channelArray.length; i++){
+	for(var i =0; i<mainSource.channelArray.length; i++){
 	photonCounts.push(0);
 }	
 
 var countCount = new Spectrum("#cromSpec", "#crom", defaultChannelWidth);
 countCount.name = "Detected";
 countCount.yAxisLabel = "Number of photons";
-
-
-
 	
 resetScreen();
 drawPhotons();
@@ -220,21 +201,27 @@ drawPhotons();
 
 function drawPhotons() {
 	drawSpectra();
-	var status = document.getElementById('status');
-	status.innerHTML = nIn+ " photons in | " + nOut + " photons out";
+
 
 	var brightness;
+	brightness = mainSource.totalValue;
 	
-	brightness = getInputValue("brightnessS");
-	brightness = testSource.totalValue;
-	inputUpdate(brightness, 0, 600, "brightnessS", "brightnessT");
-	var trans = getInputValue("transS");
+	var trans;
+	trans = mainFilter.filterSpectrum.averageValue;
+	
+	var status = document.getElementById('status');
+	status.innerHTML = nIn+ " photons in | " + nOut + " photons out";
+	
+	var brightnessDisplay = document.getElementById('brightnessDisplay');
+	brightnessDisplay.innerHTML = "Brightness (average photons per second) = "+ brightness.toFixed(1);
+
+	var transDisplay = document.getElementById('transDisplay');
+	transDisplay.innerHTML = "Percentage of white light transmitted = " + trans.toFixed(1);
+
 	var fadeRate = getInputValue("fadeS");
 	
   	mainContext.fillStyle = "rgba(0,0,0," + fadeRate/100 + ")";
   	mainContext.fillRect(0, 0, mainWidth, mainHeight);
-	
-
 	
 	updatePhotons(photons);
 	updateImpacts(impacts);
@@ -243,24 +230,22 @@ function drawPhotons() {
 	removeObjects(impacts);
 	
 	if(lampOn && brightness > 0){
-	if(testSource.relative){
- 	   for (var i = 0; i < Math.round(maxBrightness/60); i++) {
-		   if(Math.random() <= brightness/maxBrightness){
-			   createPhoton(photons, testSource);
-		   }
-		   
-	   }
-   } else {
-		createPhotons(photons, testSource);
-   }
-   }
-for(var i = 0; i < filters.length; i++){
-	var thisFilter = filters[i];
-	thisFilter.update();
-	thisFilter.render();
-}	
+		if(mainSource.relative){
+			for (var i = 0; i < Math.round(maxBrightness/60); i++) {
+				if(Math.random() <= brightness/maxBrightness){
+					createPhoton(photons, mainSource);
+				}
+			}
+		} else {
+		createPhotons(photons, mainSource);
+		}
+	}
 
-   
+	mainFilter.update();
+	mainFilter.render();
+	
+	drawElements();
+	
    if(!pause){
 	   requestAnimationFrame(drawPhotons);
    } else {
@@ -274,9 +259,11 @@ for(var i = 0; i < filters.length; i++){
    }
 }
 
+
+
 function drawSpectra(){
-	filters[0].filterSpectrum.render();
-	testSource.render();
+	mainFilter.filterSpectrum.render();
+	mainSource.render();
 	
 	var bigUps = Math.max(Math.max.apply(Math, photonCounts),1); 
 	countCount.yAxisMax = bigUps;
@@ -294,7 +281,42 @@ function drawSpectra(){
 	}
 }
 
+function drawElements(){
+	var w = 60;
+	var h = 350;
+	mainContext.strokeStyle = "rgb(255,255,0)";
+	mainContext.strokeRect(0, mainHeight/2 - h/2,w,h);
+	mainContext.fillStyle = mainContext.strokeStyle;
+	mainContext.font="40px Helvetica";
+	mainContext.textAlign = "center";
+	mainContext.textBaseline = "middle";
+	mainContext.save();
+	mainContext.translate(20, mainHeight/2);
+	mainContext.rotate(Math.PI/2);
+	mainContext.fillText("Source", 0, 0);
+	mainContext.restore();
+	
+	mainContext.strokeRect(mainWidth-w, mainHeight/2 - h/2,w,h);
 
+	mainContext.save();
+	mainContext.translate(mainWidth - 20, mainHeight/2);
+	mainContext.rotate(-1*Math.PI/2);
+	mainContext.fillText("Detector", 0,  0);
+	mainContext.restore();
+}
+
+function generatePowerSpectrum(spec){
+	var P = new Array();
+	for(var i = 0; i < spec.channels; i++){
+		var chan = i;
+		var chanMin = map_range(i, 0, spec.channels - 1, minVisEn, maxVisEn);
+		var chanMax = chanMin + (maxVisEn-minVisEn)/spec.channels;
+		var avEn = (chanMax + chanMin)/2;
+		var flux = map_range(spec.channelArray[i], 0, spec.specHeight, spec.yAxisMin, spec.yAxisMax);
+		P.push(flux*avEn);
+	}	
+	return(P);
+}
 
 
 function constrain (val, min, max) {
@@ -302,8 +324,7 @@ function constrain (val, min, max) {
 }
 
 function map_range (val, oldLow, oldHigh, newLow, newHigh){
-return(((val - oldLow)/(oldHigh - oldLow))*(newHigh - newLow) + newLow);
-
+	return(((val - oldLow)/(oldHigh - oldLow))*(newHigh - newLow) + newLow);
 }
 
 function inputUpdate(val, min, max, idThis, idThat) {
@@ -311,8 +332,6 @@ function inputUpdate(val, min, max, idThis, idThat) {
 	document.querySelector("#"+idThis).value = val;
 	document.querySelector("#"+idThat).value = val;
 }
-
-
 	
 function getInputValue(id) {
     return(document.getElementById(id).value);
@@ -324,10 +343,7 @@ function buttonChange(){
 		button.textContent="Pause";
 		requestAnimationFrame(drawPhotons);
 	} else {
-		button.textContent="Play";
-		
-
-			
+		button.textContent="Play";			
 	}
 	pause = !pause;
 }
@@ -362,7 +378,6 @@ function resetScreen(){
 	for(var i = 0; i<photonCounts.length; i++){
 		photonCounts[i] = 0;
 	}
-	
 	requestAnimationFrame(drawPhotons);
 }
 
@@ -376,7 +391,6 @@ function createPhoton(p, src){
 	p.push(newPhoton);
 
 	nIn++;
-
 }
 
 function createPhotons(p, src){
@@ -387,49 +401,38 @@ function createPhotons(p, src){
 			var chanMax = chanMin + (maxVisEn-minVisEn)/(src.channels);
 				for(var j = 0; j < 10; j++){
 				if(Math.random() < specBrightness){
-				var en = map_range(Math.random(),0,1,chanMin,chanMax);
-				var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*mainHeight,0.7*mainHeight), photonVel, 0, en);
-				p.push(newPhoton);
-				nIn++;
+					var en = map_range(Math.random(),0,1,chanMin,chanMax);
+					var newPhoton = new Photon(map_range(Math.random(),0,1,0,photonVel), map_range(Math.random(),0,1,0.3*mainHeight,0.7*mainHeight), photonVel, 0, en);
+					p.push(newPhoton);
+					nIn++;
 				}
 			}
 		}
 	}
 }
 
-
-
-
-
-
 function updatePhotons(p){
 	for(var i = 0; i < p.length; i++) {
 		var thisPhoton = p[i];
 		thisPhoton.update();
 		
-		for(var j = 0; j < filters.length; j++){
-		
-			var thisFilter = filters[j];
-			var fChans = thisFilter.coeffs.length;
-			if(thisPhoton.posX > thisFilter.posX - thisFilter.w/2 && thisPhoton.posX < thisFilter.posX + thisFilter.w/2 && thisPhoton.posY > thisFilter.posY - thisFilter.h/2 && thisPhoton.posY < thisFilter.posY + thisFilter.h/2){
-				var fChan = Math.floor(map_range(thisPhoton.energy, minVisEn, maxVisEn, 0, fChans));
-				if(Math.random()>thisFilter.coeffs[fChan]){
-					thisPhoton.alive = false;
-					if(impactsOn){
-						var newImpact = new Impact(thisPhoton.posX, thisPhoton.posY, thisPhoton.fillStyle);
-						impacts.push(newImpact);
-					}
-				}	
-			}
+		var fChans = mainFilter.coeffs.length;
+		if(thisPhoton.posX > mainFilter.posX - mainFilter.w/2 && thisPhoton.posX < mainFilter.posX + mainFilter.w/2 && thisPhoton.posY > mainFilter.posY - mainFilter.h/2 && thisPhoton.posY < mainFilter.posY + mainFilter.h/2){
+			var fChan = Math.floor(map_range(thisPhoton.energy, minVisEn, maxVisEn, 0, fChans));
+			if(Math.random()>mainFilter.coeffs[fChan]){
+				thisPhoton.alive = false;
+				if(impactsOn){
+					var newImpact = new Impact(thisPhoton.posX, thisPhoton.posY, thisPhoton.fillStyle);
+				impacts.push(newImpact);
+				}
+			}	
 		}
-		
 		if(thisPhoton.posX > mainWidth || thisPhoton.posX < 0 || thisPhoton.posY > mainHeight || thisPhoton.posY < 0){
 			thisPhoton.alive = false;
 			var chan = Math.floor(map_range(thisPhoton.energy, minVisEn, maxVisEn, 0, photonCounts.length));
 			photonCounts[chan]++;
 			nOut++;
 		}
-		
 		thisPhoton.render();	
 	}
 }
@@ -443,10 +446,10 @@ function updateImpacts(p){
 }
 
 function removeObjects(p){
-for(var i = p.length - 1; i >= 0; i--) {
+	for(var i = p.length - 1; i >= 0; i--) {
 		var thisPhoton = p[i];
 		if(!thisPhoton.alive){
-		p.splice(i,1);
+			p.splice(i,1);
 		}	
 	}
 }
@@ -468,30 +471,17 @@ function Photon(posX, posY, velX, velY, energy) {
 	
 	energy = constrain(energy, minVisEn, maxVisEn);
 	this.col = Math.round(map_range(energy, minVisEn, maxVisEn, 0, 265));
-	
-
 	this.fillStyle = "hsla(" + this.col + ",100%,50%,1)";
 
-	
 	this.update = function(){
-	
 		this.posX = this.posX + this.velX;
-		this.posY = this.posY + this.velY;	
-		
+		this.posY = this.posY + this.velY;		
 	}
 	
 	this.render = function(){
-
-		
-	
 		mainContext.fillStyle = this.fillStyle;
 		mainContext.fillRect(this.posX - this.radius, this.posY - this.radius, 2*this.radius, 2*this.radius);
-		
-		//mainContext.fillStyle = "rgba(255,255,255,0.9)"
-		//mainContext.fillRect(this.posX - 0.2*this.radius, this.posY - 0.2*this.radius, 0.4*this.radius, 0.4*this.radius);
-		
 	}
-
 }
 
 function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
@@ -502,22 +492,18 @@ function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
 	this.t = t;
 	this.vel = vel;
 	
-	this.filterSpectrum = new Spectrum(cnv,div,cWidth);
-			
+	this.filterSpectrum = new Spectrum(cnv,div,cWidth);		
 	this.coeffs = new Array();
-	
 	this.strokeStyle = "rgba(255,255,0,1)"; //this will later be dependent on its spectral properties?
 	
 	this.update = function(){
 		this.coeffs = new Array();
 		var fSpec = this.filterSpectrum.channelArray;
 		for(var i = 0; i < this.filterSpectrum.channels; i++){
-		this.coeffs.push(Math.pow(fSpec[i]/this.filterSpectrum.specHeight, this.vel/this.w));
+			this.coeffs.push(Math.pow(fSpec[i]/this.filterSpectrum.specHeight, this.vel/this.w));
 		}
 	}
-	
 
-	
 	this.render = function(){
 		mainContext.strokeStyle = this.strokeStyle;
 		mainContext.strokeRect(this.posX - w/2, this.posY - h/2,w,h);
@@ -525,13 +511,8 @@ function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
 		mainContext.font="40px Helvetica";
 		mainContext.textAlign = "center";
 		mainContext.fillText(this.filterSpectrum.name, this.posX,  this.posY + h/2 - 20 );
-
 	}
-	
 }
-
-
-
 
 function Impact(posX, posY, col){
 	this.posX = posX;
@@ -547,14 +528,12 @@ function Impact(posX, posY, col){
 		this.radius = this.radius*1.1;
 		if(this.counter > 6){
 			this.alive = false;
-		}
-		
+		}		
 	}
 
 	this.render = function(){
 		mainContext.strokeStyle = this.col;
 		mainContext.strokeRect(this.posX - this.radius, this.posY - this.radius, this.radius*2,this.radius*2);
-
 	}
 }
 
@@ -588,7 +567,6 @@ function Spectrum(cnv, div, cWidth) {
 		return(CDF);	
 	}
 
-
 	this.updateSpectrum = function(s,c){
 		s[c] = constrain(this.mY - (this.canvas.height - this.drawBounds[3]),0,(this.drawBounds[3] - this.drawBounds[2]));
 	
@@ -603,13 +581,11 @@ function Spectrum(cnv, div, cWidth) {
 	}	
 
 
-	
  this.sampleCDF = function(CDF){
 		var sample = Math.random();
 		for(var i = 0; i < CDF.length; i++){
 			if(sample < CDF[i]){
 				return(i);
-
 				break;
 			}
 		}
@@ -631,9 +607,7 @@ function Spectrum(cnv, div, cWidth) {
 	}
 	
 	this.encDiv = document.querySelector(div);
-
 	this.canvas = document.querySelector(cnv);
-
 	this.ctx = this.canvas.getContext("2d");
 	
 	this.canvas.style.cursor = "crosshair";
