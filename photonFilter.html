@@ -102,7 +102,7 @@ margin:10px;
 <div id = "experiment">
 
 <div id="graphics">
-<canvas id="screen" height="600" width="600"></canvas>
+<canvas id="screen" height="600" width="800"></canvas>
 </div>
 <h2 id="status">0 | 0</h2>
 <div id = "ui" onmousedown="false">
@@ -148,7 +148,7 @@ var requestAnimationFrame = window.requestAnimationFrame ||
 
 
 	
-document.querySelector("#screen").width = document.querySelector("#screen").height;
+//document.querySelector("#screen").width = document.querySelector("#screen").height;
 var mainCanvas = document.querySelector("#screen");
 var mainContext = mainCanvas.getContext("2d");
 		
@@ -176,7 +176,7 @@ var photonVel = 2; //pixels per frame. This is the speed of light!
 var lampOn = true;
 var impactsOn = false;
 	
-var testSource = new Spectrum("#spectrum", "#source", 4);
+var testSource = new Spectrum("#spectrum", "#source", defaultChannelWidth);
 testSource.relative = false;
 testSource.name = "Source";
 testSource.yAxisLabel = "Brightness (photons per second)";
@@ -190,7 +190,7 @@ for(var j = 0; j < testSource.channelArray.length; j++){
 	
 	
 for (var i = 0; i < 1; i++){
-	var newFilter = new Filter(mainWidth/2, mainHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", 4);
+	var newFilter = new Filter(mainWidth/2, mainHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", defaultChannelWidth);
 	newFilter.filterSpectrum.name = "Filter";
 	newFilter.filterSpectrum.yAxisLabel = "Probability of transmission (%)";
 	newFilter.filterSpectrum.yAxisMin = 0;
@@ -206,7 +206,7 @@ var photonCounts = new Array();
 	photonCounts.push(0);
 }	
 
-var countCount = new Spectrum("#cromSpec", "#crom", 4);
+var countCount = new Spectrum("#cromSpec", "#crom", defaultChannelWidth);
 countCount.name = "Detected";
 countCount.yAxisLabel = "Number of photons";
 
@@ -244,8 +244,8 @@ function drawPhotons() {
 	
 	if(lampOn && brightness > 0){
 	if(testSource.relative){
- 	   for (var i = 0; i < maxBrightness; i++) {
-		   if(Math.random() <= brightness/brightnessMax){
+ 	   for (var i = 0; i < Math.round(maxBrightness/60); i++) {
+		   if(Math.random() <= brightness/maxBrightness){
 			   createPhoton(photons, testSource);
 		   }
 		   
