@@ -524,7 +524,7 @@ function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
 		mainContext.fillStyle = this.strokeStyle;
 		mainContext.font="40px Helvetica";
 		mainContext.textAlign = "center";
-		mainContext.fillText(this.filterSpectrum.name, this.posX,  0.5*(this.posY + h/2 + mainHeight));
+		mainContext.fillText(this.filterSpectrum.name, this.posX,  this.posY + h/2 - 20 );
 
 	}
 	
