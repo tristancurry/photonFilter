@@ -15,19 +15,16 @@ canvas {
 
 canvas.spectrumDisplay {
 
-
 }
 
 #source {
-	top: 0px;
-}
-
-#filSpec {
 	
 }
 
+#filSpec {
+}
+
 #cromSpec {
-	bottom: 0px;
 }
 
 
@@ -35,21 +32,46 @@ button {
 	margin:10px;
 }
 
-#screen {
-	float: left;
-	width: 60%;
+
+@media screen and (min-width:960px) {
+	#screen {
+		float: left;
+		width: 50%;
+	}
+
+	#ui {
+		clear: left;
+		float: left;
+		width: 50%;
+	}
+
+	#spectra {
+	position:absolute;
+	margin-left:50%;
+
+	}
+
 }
 
-#ui {
-	float: left;
-	width: 60%;
+@media screen and (max-width:959px) {
+	#screen {
+		position:absolute;
+		height:35%;
+	}
+
+	#ui {
+		position:absolute;
+		top:36%;
+		height:20%
+	}
+
+	#spectra {
+		position: absolute;
+		top:60%;
+	}
 }
 
-#spectra {
-position:absolute;
-margin-left:60%;
-width:40%;
-}
+
 
 
 
@@ -85,14 +107,14 @@ width:40%;
 </div>
 <div id="spectra">
 
-		<canvas id="spectrum" class="spectrumDisplay" width="530" height="300"></canvas>
+		<canvas id="spectrum" class="spectrumDisplay" width="500" height="300"></canvas>
 
 	
 
-		<canvas id="filSpec" width="530" class="spectrumDisplay" height="300"></canvas>
+		<canvas id="filSpec" width="500" class="spectrumDisplay" height="300"></canvas>
 
 
-		<canvas id="cromSpec" width="530" class="spectrumDisplay" height="300"></canvas>
+		<canvas id="cromSpec" width="500" class="spectrumDisplay" height="300"></canvas>
 
 
 </div>
