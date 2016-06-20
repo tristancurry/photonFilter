@@ -2,7 +2,7 @@
 <html>
  <!-- Simulation of photons being filtered -->
  <!-- Created by Tristan Miller, May 2016 -->
- <!-- Download and then open in your browser. A bit slow in Firefox though! -->  
+ <!-- Download and then open in your browser. -->  
 <head>
 <meta charset="utf-8">
 <title>Photon Filtering</title>
@@ -10,81 +10,70 @@
 
 //this CSS is terrible and I feel bad about it
 canvas {
-    border: 1px #CCC solid;
+    border: 0px #CCC solid;
 }
 
-#ui {
-	width: 70%;
-	position: absolute;
-	top: 90%;
+canvas.spectrumDisplay {
+
 }
 
-input.comptrol {
-}
-
-#experiment{
-	position:absolute;
-	top:0%;
-	height:80%;
-	width: 100%;
-}
-
-#screen {
-position: absolute;
-top:0%;
-height:80%;
-}
-
-#spectrum {
-	margin: auto;
-    display: block;
+#source {
+	
 }
 
 #filSpec {
-	margin: auto;
-    display: block;
 }
 
 #cromSpec {
-	margin: auto;
-    display: block;
 }
 
-.specWrapper {
-position:absolute;
-right:0px;
-width: 550px;
-height: 350px;
-background-color: #999999;
-}
-
-#filter {
- right:0px;
- top: 350px;
- background-color: #FF9933;
-}
-
-#crom {
- right:0px;
- top: 700px;
- background-color: #99FF33;
-}
-
-#status{
-	position:relative;
-	top:80%;
-	width: 100%;
-}
-
-
-
-label {
-	width:30%;
-}
 
 button {
-margin:10px;
+	margin:10px;
 }
+
+
+@media screen and (min-width:960px) {
+	#screen {
+		float: left;
+		width: 50%;
+	}
+
+	#ui {
+		clear: left;
+		float: left;
+		width: 50%;
+	}
+
+	#spectra {
+	position:absolute;
+	margin-left:50%;
+
+	}
+
+}
+
+@media screen and (max-width:959px) {
+	#screen {
+		position:absolute;
+		height:35%;
+	}
+
+	#ui {
+		position:absolute;
+		top:36%;
+		height:20%
+	}
+
+	#spectra {
+		position: absolute;
+		top:60%;
+	}
+}
+
+
+
+
 
 </style>
 </head>
@@ -99,16 +88,17 @@ margin:10px;
 
 <canvas id="screen" height="600" width="800"></canvas>
 
-<h2 id="status">0 | 0</h2>
+
 <div id = "ui" onmousedown="false">
 	<button type="button" id="lamp" onclick="lampToggle()">Turn lamp off</button>
 	<button type="button" id="impacts" onclick="impactToggle()">Highlight absorptions</button>
 	<button type="button" id="playPause" onclick="buttonChange()">Pause</button>
 	<button type="button" id="reset" onclick="resetScreen()">Reset</button>
 	<br>
-	<label id="brightnessDisplay" >Brightness (average photons per second)</label>
+	<h2 id="status">0 | 0</h2>
+	<div id="brightnessDisplay" >Brightness (average photons per second)</div>
 	<br>
-	<label id="transDisplay" >Probability for transmission</label>
+	<div id="transDisplay" >Probability for transmission</div>
 	<br>
 	<label for="fadeS" >Fade rate</label>
 	<input type="range" id="fadeS" class="comptrol" min = "0" max = "100" step = "0.1" value="20" onInput="inputUpdate(value, min, max,id, 'fadeT')">
@@ -116,15 +106,17 @@ margin:10px;
 </div>
 </div>
 <div id="spectra">
-	<div id="source" class="specWrapper">
-		<canvas id="spectrum" width="530" height="300"></canvas>
-	</div>
-	<div id="filter" class="specWrapper">
-		<canvas id="filSpec" width="530" height="300"></canvas>
-	</div>
-	<div id="crom" class="specWrapper">
-		<canvas id="cromSpec" width="530" height="300"></canvas>
-	</div>
+
+		<canvas id="spectrum" class="spectrumDisplay" width="500" height="300"></canvas>
+
+	
+
+		<canvas id="filSpec" width="500" class="spectrumDisplay" height="300"></canvas>
+
+
+		<canvas id="cromSpec" width="500" class="spectrumDisplay" height="300"></canvas>
+
+
 </div>
 
 
@@ -144,6 +136,7 @@ var mainContext = mainCanvas.getContext("2d");
 var mainWidth = mainCanvas.width;
 var mainHeight = mainCanvas.height;
 	
+
 	
 var maxBrightness = 600; //avg photons per second
 var defaultChannelWidth = 5; //pixel width of columns in spectrum graphs
@@ -162,7 +155,7 @@ var photonVel = 2; //pixels per frame. This is the speed of light!
 var lampOn = true;
 var impactsOn = false;
 	
-var mainSource = new Spectrum("#spectrum", "#source", defaultChannelWidth);
+var mainSource = new Spectrum("#spectrum", "#spectra", defaultChannelWidth);
 mainSource.relative = false;
 mainSource.name = "Source";
 mainSource.yAxisLabel = "Brightness (photons per second)";
@@ -174,7 +167,7 @@ for(var j = 0; j < mainSource.channelArray.length; j++){
 	mainSource.averageValue = mainSource.calculateSpectrumAverage();
 }
 	
-var mainFilter = new Filter(mainWidth/2, mainHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#filter", defaultChannelWidth);
+var mainFilter = new Filter(mainWidth/2, mainHeight/2, 200, 400, 0.00001, photonVel,"#filSpec", "#spectra", defaultChannelWidth);
 mainFilter.filterSpectrum.name = "Filter";
 mainFilter.filterSpectrum.yAxisLabel = "Probability of transmission (%)";
 mainFilter.filterSpectrum.yAxisMin = 0;
@@ -190,7 +183,7 @@ var photonCounts = new Array();
 	photonCounts.push(0);
 }	
 
-var countCount = new Spectrum("#cromSpec", "#crom", defaultChannelWidth);
+var countCount = new Spectrum("#cromSpec", "#spectra", defaultChannelWidth);
 countCount.name = "Detected";
 countCount.yAxisLabel = "Number of photons";
 	
@@ -675,7 +668,8 @@ function Spectrum(cnv, div, cWidth) {
 	this.canvas.addEventListener('mouseout', function(event){
 		self.mStillDown = false;
 	});
-
+	
+	
 	
 	this.drawAxes = function(){
 	
