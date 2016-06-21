@@ -132,6 +132,8 @@ var requestAnimationFrame = window.requestAnimationFrame ||
 							
 var mainCanvas = document.querySelector("#screen");
 var mainContext = mainCanvas.getContext("2d");
+
+
 		
 var mainWidth = mainCanvas.width;
 var mainHeight = mainCanvas.height;
@@ -295,6 +297,12 @@ function drawElements(){
 	mainContext.translate(mainWidth - 20, mainHeight/2);
 	mainContext.rotate(-1*Math.PI/2);
 	mainContext.fillText("Detector", 0,  0);
+	mainContext.restore();
+	
+	mainContext.save();
+	mainContext.translate(80,mainHeight - 50);
+	mainContext.fillStyle = mainSource.drawColour;
+	mainContext.fillRect(0,0,10,10);
 	mainContext.restore();
 }
 
@@ -463,7 +471,7 @@ function Photon(posX, posY, velX, velY, energy) {
 	this.alive = true;
 	
 	energy = constrain(energy, minVisEn, maxVisEn);
-	this.col = Math.round(map_range(energy, minVisEn, maxVisEn, 0, 265));
+	this.col = Math.round(map_range(energy, minVisEn, maxVisEn, 0, 260));
 	this.fillStyle = "hsla(" + this.col + ",100%,50%,1)";
 
 	this.update = function(){
@@ -503,6 +511,7 @@ function Filter(posX, posY, w, h, t, vel, cnv, div, cWidth){
 		mainContext.fillStyle = this.strokeStyle;
 		mainContext.font="40px Helvetica";
 		mainContext.textAlign = "center";
+		mainContext.textBaseline = "middle";
 		mainContext.fillText(this.filterSpectrum.name, this.posX,  this.posY + h/2 - 20 );
 	}
 }
@@ -571,6 +580,7 @@ function Spectrum(cnv, div, cWidth) {
 		this.spectrumCDF = this.makeCDF(this.normaliseSpectrum(s));
 		this.totalValue = this.calculateSpectrumTotal();
 		this.averageValue = this.calculateSpectrumAverage();
+		this.drawColour = this.findDrawColour();
 	}	
 
 
@@ -598,6 +608,49 @@ function Spectrum(cnv, div, cWidth) {
 		A = A/this.channelArray.length;
 		return(A);
 	}
+	
+	this.hues = function(){
+		var H = new Array();
+		for(var i = 0; i < this.channelArray.length; i++){
+			var h = Math.floor(map_range(i, 0, this.channels - 1, 0, 260));
+			H.push(h);
+		}
+		return(H);
+	}
+	
+	this.findDrawColour = function(){
+		var H = this.hues();
+		/*ctx.beginPath();
+		ctx.arc(0, 0, 10, 0, 2*Math.PI, false);
+		ctx.closePath();
+		ctx.fillStyle = "hsl(0, 100%, 100%)";
+		ctx.fill();*/
+		this.ctx.globalCompositeOperation = "screen";
+		for(var i = 0; i < H.length; i++){
+
+			this.ctx.fillStyle = "hsla(" + H[i] + ", 100%, 50%," + this.normSpectrum[i] + ")";
+			this.ctx.fillRect(0,0,5,5);
+		}
+		this.ctx.globalCompositeOperation = "source-over";
+		var imgd = this.ctx.getImageData(0, 0, 1, 1);
+		var pix = imgd.data;
+		var dC = "rgb("+pix[0]+","+pix[1]+","+ pix[2] +")";
+		return(dC);
+	}
+	
+	/*this.drawColour = function(ctx){
+		var H = this.hues();
+
+		ctx.globalCompositeOperation = "screen";
+		for(var i = 0; i < H.length; i++){
+			ctx.beginPath();
+			ctx.arc(0, 0, 10, 0, 2*Math.PI, false);
+			ctx.closePath();
+			ctx.fillStyle = "hsla(" + H[i] + ", 100%, 50%," + this.normSpectrum[i] + ")";
+			ctx.fill();
+		}
+		ctx.globalCompositeOperation = "source-over";
+	}*/
 	
 	this.encDiv = document.querySelector(div);
 	this.canvas = document.querySelector(cnv);
@@ -630,6 +683,7 @@ function Spectrum(cnv, div, cWidth) {
 	
 	this.totalValue = this.calculateSpectrumTotal();
 	this.averageValue = this.calculateSpectrumAverage();
+	this.drawColour = this.findDrawColour();
 	
 	var self = this;
 	
@@ -656,7 +710,7 @@ function Spectrum(cnv, div, cWidth) {
 	});
 	
 	this.canvas.addEventListener('mousedown', function(event){
-		var thisChannel = constrain(Math.floor((self.mX - self.drawBounds[0])/self.chanWidth),0,self.channelArray.length - 1);
+		var thisChannel = constrain(Math.floor((self.mX - self.drawBounds[0])/self.chanWidth),0,self.channelArray.length -1);
 			self.updateSpectrum(self.channelArray,thisChannel);
 		self.mStillDown = true;
 	});
@@ -736,7 +790,7 @@ this.render = function(){
 		this.ctx.fillText(this.name, this.specWidth/2 ,-1*this.specHeight/2);
 		this.ctx.restore();
 		for(var i = 0; i < this.channelArray.length; i++){
-			var col = Math.round(map_range(i, 0, this.channelArray.length, 0, 265));
+			var col = Math.round(map_range(i, 0, this.channelArray.length, 0, 260));
 			this.ctx.fillStyle = "hsla(" + col + ",100%,50%,1)"	;
 			this.ctx.strokeStyle = this.ctx.fillStyle;
 			this.ctx.strokeRect((i+1)*this.chanWidth + this.drawBounds[0], this.drawBounds[3],-1*this.chanWidth, -1*this.channelArray[i]);	
