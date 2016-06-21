@@ -44,14 +44,13 @@ body {
 }
 
 #experiment {
-	max-width:1300px;
+	max-width:1000px;
 	width:90%;
-	display:block;
-	margin:auto;
+
 }
 
 
-@media screen and (min-width:1300px) {
+@media screen and (min-width:1000px) {
 	
 	
 	
@@ -88,21 +87,21 @@ body {
 
 }
 
-@media screen and (max-width:1299px) {
+@media screen and (max-width:999px) {
 	.mainDisplay {
 		position:absolute;
-		height:40%;
+		height:70%;
 	}
 
 	#ui {
 		position:absolute;
-		top:46%;
+		top:76%;
 		height:20%
 	}
 
 	#spectra {
 		position: absolute;
-		top:70%;
+		top:100%;
 		margin-bottom:70px;
 	}
 }
@@ -144,14 +143,14 @@ body {
 
 <div id="spectra">
 
-		<canvas id="spectrum" class="spectrumDisplay" onmousedown="return false" width="500" height="300"></canvas>
+		<canvas id="spectrum" width="450" class="spectrumDisplay" onmousedown="return false"  height="300"></canvas>
 
 	
 
-		<canvas id="filSpec" width="500" class="spectrumDisplay" onmousedown="return false" height="300"></canvas>
+		<canvas id="filSpec" width="450" class="spectrumDisplay" onmousedown="return false" height="300"></canvas>
 
 
-		<canvas id="cromSpec" width="500" class="spectrumDisplay" onmousedown="return false" height="300"></canvas>
+		<canvas id="cromSpec" width="450" class="spectrumDisplay" onmousedown="return false" height="300"></canvas>
 
 
 </div>
@@ -188,7 +187,7 @@ var sourceDrawColour = "rgb(255,255,255)";
 var detectDrawColour = "rgb(255,255,255)";
 var filterDrawColour = "rgb(255,255,255)";
 	
-var maxBrightness = 300; //avg photons per second
+var maxBrightness = 100; //avg photons per second
 var defaultChannelWidth = 5; //pixel width of columns in spectrum graphs
 var pause = false;
 	
@@ -403,7 +402,7 @@ function drawElements(){
 	
 
 	}
-	drawLayerCounter = (drawLayerCounter + 1)%10;
+	drawLayerCounter = (drawLayerCounter + 1)%20;
 }
 
 function findDrawColour(x,y){
@@ -546,7 +545,8 @@ function updatePhotons(p){
 		thisPhoton.update();
 		
 		var fChans = mainFilter.coeffs.length;
-		if(thisPhoton.posX > mainFilter.posX - mainFilter.w/2 && thisPhoton.posX < mainFilter.posX + mainFilter.w/2 && thisPhoton.posY > mainFilter.posY - mainFilter.h/2 && thisPhoton.posY < mainFilter.posY + mainFilter.h/2){
+		if(thisPhoton.posX > mainFilter.posX - mainFilter.w/2 && thisPhoton.posX < mainFilter.posX + mainFilter.w/2){
+if(thisPhoton.posY > mainFilter.posY - mainFilter.h/2 && thisPhoton.posY < mainFilter.posY + mainFilter.h/2){
 			var fChan = Math.floor(map_range(thisPhoton.energy, minVisEn, maxVisEn, 0, fChans));
 			if(Math.random()>mainFilter.coeffs[fChan]){
 				thisPhoton.alive = false;
@@ -556,7 +556,8 @@ function updatePhotons(p){
 				}
 			}	
 		}
-		if(thisPhoton.posX > mainWidth || thisPhoton.posX < 0 || thisPhoton.posY > mainHeight || thisPhoton.posY < 0){
+		}
+		if(thisPhoton.posX > mainWidth){
 			thisPhoton.alive = false;
 			var chan = Math.floor(map_range(thisPhoton.energy, minVisEn, maxVisEn, 0, photonCounts.length));
 			photonCounts[chan]++;
